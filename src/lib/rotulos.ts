@@ -16,6 +16,9 @@ export const CIDADES: Record<Cidade, string> = {
   itaperuna: "Itaperuna",
 };
 
+/** Nome curto (cartões e celular). */
+export const CIDADES_CURTO: Record<Cidade, string> = { italva: "Italva", campos: "Campos", itaperuna: "Itaperuna" };
+
 export const SENTIDOS: Record<Sentido, string> = {
   ida: "Ida",
   volta: "Volta",

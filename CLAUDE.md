@@ -398,3 +398,16 @@ Construa uma fase por vez e só avance com a minha aprovação.
 5. **Um perfil por CPF.**
 6. **Um comprovante de matrícula por aluno.**
 7. Dia da semana = `smallint` ISO (1 = segunda … 7 = domingo).
+
+## 17. Decisões aprovadas da Fase 2 (23/10/2026)
+
+1. **Matrícula** é válida se `matricula_validade >= data da viagem` (sem validade cadastrada = não reserva).
+2. **Feriado/recesso geral**: as viagens do dia **não são geradas**.
+3. Mudanças em viagem modelo/escala modelo valem **só para dias ainda não gerados**. Dias já gerados: ajuste no painel do dia, com botão "Reaplicar escala modelo" enquanto o prazo estiver aberto. As viagens do dia guardam cópia dos horários.
+4. **Aluno sem ponto** definido pode reservar; o painel mostra alerta.
+5. **Semestre**: se o dia da grade tem instituição e ela tem semestres cadastrados, a data precisa estar dentro de um deles.
+6. **Excesso** na alocação: distribui entre os ônibus e alerta; a SEMTRANSP põe ônibus extra e realoca.
+7. **Avisos** na Fase 2 só ficam gravados (`notificacoes`, status pendente) e aparecem no app; envio por WhatsApp/push na Fase 5.
+8. Rotinas no **pg_cron**: gerar viagens (00:05 SP, 2 dias à frente) e fechar prazos (a cada 5 min). O prazo vale no segundo exato (conferido na função `reservar`).
+9. Testes usam `agora()`: igual a `now()`, exceto quando `app.ambiente = 'teste'`, que permite fixar `app.agora`.
+10. A volta 20:30 (condicional) não é gerada até a Fase 4.

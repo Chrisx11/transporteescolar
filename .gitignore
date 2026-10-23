@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# acessos de teste gerados por scripts/dados-teste.mjs
+*.local.md

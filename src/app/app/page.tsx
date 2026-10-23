@@ -1,58 +1,69 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowDownLeft, ArrowUpRight, CalendarCheck, Clock3, MapPin, Sparkles } from "lucide-react";
+import { CalendarCheck, CalendarX2 } from "lucide-react";
 import { exigirPerfil } from "@/lib/auth";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { Aviso, Vazio, cx } from "@/components/ui";
-import { DIAS_SEMANA, dataBR, diaSemanaIso, hhmm, hojeSP } from "@/lib/tempo";
-import { CIDADES, type Cidade } from "@/lib/rotulos";
+import { DIAS_SEMANA, dataBR, diaSemanaIso, hojeSP, somarDias } from "@/lib/tempo";
+import type { MinhaViagem } from "@/lib/viagens";
+import { CartaoViagem } from "./cartao-viagem";
 
-type Viagem = { nome: string; cidade: Cidade; hora_saida: string } | null;
-
-/** Tela inicial do aluno. Na Fase 1 mostra a grade de hoje; reservas chegam na Fase 2. */
-export default async function HojeAluno() {
+/**
+ * Tela inicial do aluno: viagens de Hoje (e de Amanhã, quando a reserva já
+ * abriu). Mostra só o que está na grade (RN01), com prazo e botão de reserva.
+ */
+export default async function HojeAluno({ searchParams }: { searchParams: Promise<{ dia?: string }> }) {
   const sessao = await exigirPerfil("aluno", "motorista");
   if (sessao.perfil === "motorista") redirect("/app/motorista");
 
   const supabase = await criarClienteServidor();
   const hoje = hojeSP();
-  const dia = diaSemanaIso(hoje);
-  const [{ data: aluno }, { data: grade }] = await Promise.all([
+  const amanha = somarDias(hoje, 1);
+
+  const [{ data: aluno }, { data: deHoje }, { data: deAmanha }] = await Promise.all([
     supabase.from("alunos").select("situacao, matricula_validade").eq("usuario_id", sessao.id).maybeSingle(),
-    supabase
-      .from("grade_semanal")
-      .select(
-        "ida:viagens_modelo!grade_semanal_viagem_ida_modelo_id_fkey(nome, cidade, hora_saida), volta:viagens_modelo!grade_semanal_viagem_volta_modelo_id_fkey(nome, cidade, hora_saida)",
-      )
-      .eq("aluno_id", sessao.id)
-      .eq("dia_semana", dia)
-      .maybeSingle(),
+    supabase.rpc("minhas_viagens", { p_data: hoje }),
+    supabase.rpc("minhas_viagens", { p_data: amanha }),
   ]);
 
-  const ida = (grade?.ida ?? null) as unknown as Viagem;
-  const volta = (grade?.volta ?? null) as unknown as Viagem;
+  const listaAmanha = (deAmanha ?? []) as MinhaViagem[];
+  // A aba "Amanhã" aparece quando alguma viagem de amanhã já abriu (ou já tem reserva).
+  const amanhaAberto = listaAmanha.some((v) => v.reserva_id || (v.motivo !== "ainda_nao_abriu" && v.motivo !== "nao_gerada"));
+  const aba = (await searchParams).dia === "amanha" && amanhaAberto ? "amanha" : "hoje";
+  const data = aba === "hoje" ? hoje : amanha;
+  const lista = aba === "hoje" ? ((deHoje ?? []) as MinhaViagem[]) : listaAmanha;
   const vencida = aluno?.matricula_validade && aluno.matricula_validade < hoje;
-  const trechos = [
-    { rotulo: "Ida", v: ida, icone: ArrowUpRight, cor: "from-azul-500 to-azul-700", texto: "Italva → " },
-    { rotulo: "Volta", v: volta, icone: ArrowDownLeft, cor: "from-emerald-400 to-teal-600", texto: "→ Italva" },
-  ].filter((t) => t.v);
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between rounded-2xl bg-white p-4 shadow-elevada">
-        <div className="flex items-center gap-3">
-          <span className="flex size-11 items-center justify-center rounded-xl bg-azul-50 text-azul-600">
-            <CalendarCheck className="size-5" />
-          </span>
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-slate-400">Hoje</p>
-            <p className="font-semibold text-slate-900">
-              {DIAS_SEMANA.find((d) => d.valor === dia)?.nome}, {dataBR(hoje).slice(0, 5)}
-            </p>
-          </div>
+      <div className="rounded-2xl bg-white p-2 shadow-elevada">
+        <div className="grid grid-cols-2 gap-1">
+          {[
+            { chave: "hoje", rotulo: "Hoje", data: hoje, href: "/app", ativo: true },
+            { chave: "amanha", rotulo: "Amanhã", data: amanha, href: "/app?dia=amanha", ativo: amanhaAberto },
+          ].map((t) =>
+            t.ativo ? (
+              <Link
+                key={t.chave}
+                href={t.href}
+                className={cx(
+                  "flex flex-col items-center rounded-xl py-2 transition-colors",
+                  aba === t.chave ? "bg-azul-600 text-white shadow-md shadow-azul-600/30" : "text-slate-600 hover:bg-slate-50",
+                )}
+              >
+                <span className="text-sm font-semibold">{t.rotulo}</span>
+                <span className={cx("text-xs", aba === t.chave ? "text-azul-100" : "text-slate-400")}>
+                  {DIAS_SEMANA.find((d) => d.valor === diaSemanaIso(t.data))?.curto}, {dataBR(t.data).slice(0, 5)}
+                </span>
+              </Link>
+            ) : (
+              <span key={t.chave} className="flex flex-col items-center rounded-xl py-2 text-slate-300" title="A reserva de amanhã ainda não abriu">
+                <span className="text-sm font-semibold">{t.rotulo}</span>
+                <span className="text-xs">ainda não abriu</span>
+              </span>
+            ),
+          )}
         </div>
-        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-          {trechos.length} {trechos.length === 1 ? "viagem" : "viagens"}
-        </span>
       </div>
 
       {aluno?.situacao === "pendente" && <Aviso tipo="alerta">Seu cadastro está em análise pela Secretaria de Educação.</Aviso>}
@@ -63,36 +74,14 @@ export default async function HojeAluno() {
         </Aviso>
       )}
 
-      {trechos.length === 0 ? (
-        <Vazio icone={CalendarCheck}>Você não tem viagens na sua grade para hoje.</Vazio>
+      {lista.length === 0 ? (
+        <Vazio icone={CalendarCheck}>
+          Você não tem viagens na sua grade para {aba === "hoje" ? "hoje" : "amanhã"}.
+        </Vazio>
+      ) : lista.every((v) => v.motivo === "sem_operacao") ? (
+        <Vazio icone={CalendarX2}>Não há transporte em {dataBR(data)} (feriado ou recesso).</Vazio>
       ) : (
-        trechos.map(({ rotulo, v, icone: Icone, cor, texto }) => (
-          <article key={rotulo} className="overflow-hidden rounded-3xl bg-white shadow-suave">
-            <div className="flex items-center gap-4 p-5">
-              <span className={cx("flex size-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-lg", cor)}>
-                <Icone className="size-7" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{rotulo}</p>
-                <p className="truncate font-semibold text-slate-900">{v!.nome}</p>
-                <p className="flex items-center gap-1 text-sm text-slate-500">
-                  <MapPin className="size-3.5" />
-                  {rotulo === "Ida" ? `${texto}${CIDADES[v!.cidade]}` : `${CIDADES[v!.cidade]} ${texto}`}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="flex items-center justify-end gap-1 text-xs text-slate-400">
-                  <Clock3 className="size-3.5" /> saída
-                </p>
-                <p className="text-3xl font-bold tabular-nums tracking-tight text-slate-900">{hhmm(v!.hora_saida)}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 border-t border-dashed border-slate-200 bg-slate-50/70 px-5 py-3 text-xs text-slate-500">
-              <Sparkles className="size-3.5 text-destaque-500" />
-              A reserva pelo app estará disponível em breve.
-            </div>
-          </article>
-        ))
+        lista.map((v) => <CartaoViagem key={`${data}-${v.sentido}`} v={v} />)
       )}
     </div>
   );

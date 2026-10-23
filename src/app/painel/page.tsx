@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  Activity,
   ArrowUpRight,
   Bus,
   CalendarDays,
@@ -15,6 +16,7 @@ import {
 import { exigirPerfil } from "@/lib/auth";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { Estatistica } from "@/components/ui";
+import { carregarDia } from "./dia/dados";
 import { DIAS_SEMANA, dataBR, diaSemanaIso, hojeSP } from "@/lib/tempo";
 
 async function contar(tabela: string, filtro?: [string, string]) {
@@ -46,6 +48,12 @@ export default async function InicioPainel() {
     veEduc ? contar("alunos", ["situacao", "pendente"]) : 0,
     veEduc ? contar("instituicoes", ["ativa", "true"]) : 0,
   ]);
+  const doDia = veTransp ? await carregarDia(hoje) : [];
+  const resumo = {
+    viagens: doDia.filter((v) => v.status !== "cancelada").length,
+    reservas: doDia.reduce((s, v) => s + (v.status === "cancelada" ? 0 : v.reservas), 0),
+    alertas: doDia.reduce((s, v) => s + v.alertas.length, 0),
+  };
 
   const atalhos: Atalho[] = [
     ...(veEduc
@@ -76,11 +84,23 @@ export default async function InicioPainel() {
             <h1 className="mt-2 text-3xl font-bold tracking-tight">
               {saudacao()}, {sessao.nome.split(" ")[0]}!
             </h1>
-            <p className="mt-1 text-azul-100/90">Aqui está o resumo dos cadastros do transporte.</p>
+            <p className="mt-1 text-azul-100/90">
+              {veTransp
+                ? `Hoje: ${resumo.viagens} viagens, ${resumo.reservas} reservas${resumo.alertas ? `, ${resumo.alertas} alerta(s)` : ""}.`
+                : "Aqui está o resumo dos cadastros do transporte."}
+            </p>
           </div>
-          <p className="rounded-full bg-white/10 px-3 py-1 text-xs font-medium ring-1 ring-white/20 backdrop-blur">
-            Painel do dia chega na Fase 2
-          </p>
+          {veTransp && (
+            <Link
+              href="/painel/dia"
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-azul-800 shadow-lg transition hover:bg-azul-50"
+            >
+              <Activity className="size-4" /> Abrir painel do dia
+              {resumo.alertas > 0 && (
+                <span className="rounded-full bg-red-500 px-1.5 text-[11px] font-bold text-white">{resumo.alertas}</span>
+              )}
+            </Link>
+          )}
         </div>
       </div>
 

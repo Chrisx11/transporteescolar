@@ -1,5 +1,6 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { LogOut } from "lucide-react";
+import { Bell, LogOut } from "lucide-react";
 import { exigirPerfil } from "@/lib/auth";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { Avatar, Marca } from "@/components/ui";
@@ -21,6 +22,14 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
     if (!count) redirect("/termo");
   }
 
+  const supabase = await criarClienteServidor();
+  const { count } = await supabase
+    .from("notificacoes")
+    .select("id", { count: "exact", head: true })
+    .eq("usuario_id", sessao.id)
+    .is("lida_em", null);
+  const naoLidos = count ?? 0;
+
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-[#f4f6fb] sm:my-6 sm:min-h-[calc(100dvh-3rem)] sm:overflow-hidden sm:rounded-[2rem] sm:shadow-elevada">
       <header className="relative overflow-hidden bg-gradient-to-br from-azul-600 via-azul-700 to-azul-900 px-5 pb-16 pt-6 text-white">
@@ -31,14 +40,28 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
             <Marca className="size-9" />
             <span className="text-sm font-semibold text-azul-100">Transporte Italva</span>
           </div>
-          <form action="/auth/sair" method="post">
-            <button
-              className="flex size-10 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/15 transition hover:bg-white/20"
-              aria-label="Sair"
+          <div className="flex items-center gap-2">
+            <Link
+              href={sessao.perfil === "aluno" ? "/app/avisos" : "/app/motorista"}
+              className="relative flex size-10 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/15 transition hover:bg-white/20"
+              aria-label={naoLidos ? `${naoLidos} avisos novos` : "Avisos"}
             >
-              <LogOut className="size-4" />
-            </button>
-          </form>
+              <Bell className="size-4" />
+              {naoLidos > 0 && (
+                <span className="absolute -right-1 -top-1 flex min-w-5 items-center justify-center rounded-full bg-destaque-400 px-1 text-[11px] font-bold text-azul-950 ring-2 ring-azul-700">
+                  {naoLidos > 9 ? "9+" : naoLidos}
+                </span>
+              )}
+            </Link>
+            <form action="/auth/sair" method="post">
+              <button
+                className="flex size-10 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/15 transition hover:bg-white/20"
+                aria-label="Sair"
+              >
+                <LogOut className="size-4" />
+              </button>
+            </form>
+          </div>
         </div>
         <div className="relative mt-6 flex items-center gap-3">
           <Avatar nome={sessao.nome} className="size-12 text-sm ring-2 ring-white/30" />

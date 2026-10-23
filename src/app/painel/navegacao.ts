@@ -1,4 +1,5 @@
 import {
+  Activity,
   Bus,
   CalendarDays,
   CalendarRange,
@@ -24,6 +25,7 @@ export const MENU: GrupoMenu[] = [
     titulo: "Transportes",
     perfis: ["semtransp", "admin"],
     itens: [
+      { href: "/painel/dia", rotulo: "Painel do dia", icone: Activity },
       { href: "/painel/onibus", rotulo: "Ônibus", icone: Bus },
       { href: "/painel/motoristas", rotulo: "Motoristas", icone: UserCog },
       { href: "/painel/pontos", rotulo: "Pontos", icone: MapPin },
@@ -53,6 +55,7 @@ export const MENU: GrupoMenu[] = [
 /** Nomes dos trechos da URL usados na trilha (breadcrumb). */
 const ROTULOS: Record<string, string> = {
   painel: "Início",
+  dia: "Painel do dia",
   onibus: "Ônibus",
   adesivo: "Adesivo do QR",
   motoristas: "Motoristas",

@@ -3,7 +3,7 @@
 Sistema de logística do transporte universitário (reservas, embarque por QR code e frequência).
 A especificação completa está em [CLAUDE.md](CLAUDE.md).
 
-**Fase atual: 1. Base e cadastros**
+**Fase atual: 2. Reservas e operação do dia**
 
 ## Como rodar
 
@@ -50,3 +50,13 @@ npm test
 | `src/lib/device/` | Câmera, localização e notificações atrás de interfaces (para o Capacitor no futuro) |
 | `src/lib/usuarios.ts` | Criação de logins e senhas provisórias |
 | `public/sw.js` | Service worker do PWA |
+
+## Banco pelo SQL Editor do Supabase
+
+Cada fase tem um arquivo para colar no SQL Editor, rodado **uma única vez e na ordem**:
+
+1. `supabase/sql-editor-fase1.sql` – base e cadastros.
+2. `supabase/sql-editor-fase2.sql` – reservas e operação do dia. **Antes**, ative a extensão **pg_cron** em
+   *Database → Extensions*: assim as rotinas (gerar viagens às 00:05 e fechar prazos a cada 5 min) já ficam agendadas.
+
+Para conferir as rotinas: `select jobname, schedule from cron.job;`
