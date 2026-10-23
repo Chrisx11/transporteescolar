@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+@theme {
+  /* Azul institucional (marca) */
+  --color-azul-50: #eff5ff;
+  --color-azul-100: #dbe8fe;
+  --color-azul-200: #bfd5fe;
+  --color-azul-300: #93b8fd;
+  --color-azul-400: #6091fa;
+  --color-azul-500: #3b6cf6;
+  --color-azul-600: #254deb;
+  --color-azul-700: #1d3bd8;
+  --color-azul-800: #1e32af;
+  --color-azul-900: #1e2f8a;
+  --color-azul-950: #141d54;
+
+  /* Destaque (amarelo do transporte escolar) */
+  --color-destaque-400: #fbbf24;
+  --color-destaque-500: #f59e0b;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+
+  --shadow-suave: 0 1px 2px rgb(15 23 42 / 0.04), 0 4px 16px -4px rgb(15 23 42 / 0.08);
+  --shadow-elevada: 0 2px 4px rgb(15 23 42 / 0.04), 0 12px 32px -8px rgb(15 23 42 / 0.16);
+
+  --animate-surgir: surgir 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  @keyframes surgir {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+html {
+  color-scheme: light;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: #f4f6fb;
+  color: #0f172a;
+  font-feature-settings: "cv11", "ss01";
+}
+
+/* Tabelas */
+.tabela thead th {
+  background: #f8fafc;
+  padding: 0.7rem 1rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+  white-space: nowrap;
+  border-bottom: 1px solid #e2e8f0;
+}
+.tabela td {
+  padding: 0.8rem 1rem;
+  vertical-align: middle;
+}
+.tabela tbody tr {
+  border-top: 1px solid #f1f5f9;
+  transition: background-color 0.15s;
+}
+.tabela tbody tr:first-child {
+  border-top: 0;
+}
+.tabela tbody tr:hover {
+  background: #f8fafc;
+}
+
+/* Fundo decorativo (telas de acesso) */
+.fundo-pontos {
+  background-image: radial-gradient(rgb(255 255 255 / 0.12) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* Inputs de arquivo */
+input[type="file"]::file-selector-button {
+  margin-right: 0.75rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: var(--color-azul-50);
+  color: var(--color-azul-700);
+  padding: 0.4rem 0.8rem;
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+@media print {
+  .nao-imprimir {
+    display: none !important;
+  }
+  body {
+    background: white;
+  }
+}
