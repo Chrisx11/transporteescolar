@@ -78,7 +78,8 @@ export async function POST(req: NextRequest) {
 
   // Cada página de login aceita só o próprio perfil. Esta checagem vem depois da
   // senha conferida, para não revelar a quem pertence um CPF.
-  if (usuario.perfil !== area) {
+  // O Admin entra por qualquer página de login e vai para o painel completo.
+  if (usuario.perfil !== area && usuario.perfil !== "admin") {
     await supabase.auth.signOut();
     const certa = AREAS_LOGIN[usuario.perfil as Perfil];
     return NextResponse.json(
