@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { COOKIE_MODO_ADMIN, ehModoAdmin, obterSessao } from "@/lib/auth";
 import { inicioDoPerfil } from "@/lib/rotulos";
 
-/** Admin troca a área que está vendo: /auth/modo?para=aluno|motorista|painel */
+/** Admin troca a área que está vendo: /auth/modo?para=aluno|motorista|semeduc|semtransp|admin */
 export async function GET(req: NextRequest) {
   const sessao = await obterSessao();
   if (!sessao?.admin) return NextResponse.redirect(new URL("/login", req.url));

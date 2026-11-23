@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
 
   // Cada página de login aceita só o próprio perfil. Esta checagem vem depois da
   // senha conferida, para não revelar a quem pertence um CPF.
-  // O Admin entra por qualquer página de login e vai para o painel completo.
+  // O Admin entra por qualquer página de login e vê só aquela área.
   if (usuario.perfil !== area && usuario.perfil !== "admin") {
     await supabase.auth.signOut();
     const certa = AREAS_LOGIN[usuario.perfil as Perfil];
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Admin: a página de login escolhida define a área (aluno, motorista ou painel).
+  // Admin: a página de login escolhida define a área (Admin completo, SEMEDUC, SEMTRANSP, aluno ou motorista).
   let perfilDestino = usuario.perfil as Perfil;
   if (usuario.perfil === "admin") {
     const jar = await cookies();
