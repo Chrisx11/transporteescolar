@@ -149,7 +149,7 @@ describe("regras no banco", () => {
     const id = "00000000-0000-0000-0000-0000000000ff";
     await db.query("insert into auth.users (id) values ($1)", [id]);
     await expect(
-      db.query("insert into usuarios (id, cpf, nome, perfil) values ($1, '52998224724', 'X', 'aluno')", [id]),
+      db.query("insert into usuarios (id, cpf, nome, perfil) values ($1, '5299822472', 'X', 'aluno')", [id]),
     ).rejects.toThrow(/cpf/i);
     await expect(
       db.query("insert into usuarios (id, cpf, nome, perfil) values ($1, $2, 'X', 'aluno')", [id, CPF.alunoA]),

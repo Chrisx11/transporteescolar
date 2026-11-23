@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cpfValido, formatarCpf, limparCpf } from "./cpf";
+import { cpfAceito, cpfValido, formatarCpf, limparCpf } from "./cpf";
 
 describe("CPF", () => {
   it("aceita CPFs válidos com ou sem máscara", () => {
@@ -23,5 +23,21 @@ describe("CPF", () => {
   it("limpa e formata", () => {
     expect(limparCpf(" 529.982.247-25 ")).toBe("52998224725");
     expect(formatarCpf("52998224725")).toBe("529.982.247-25");
+  });
+});
+
+describe("cpfAceito", () => {
+  it("exige CPF verdadeiro por padrão", () => {
+    delete process.env.ACEITAR_CPF_DE_TESTE;
+    expect(cpfAceito("123.456.789-00")).toBe(false);
+    expect(cpfAceito("529.982.247-25")).toBe(true);
+  });
+
+  it("aceita qualquer número de 11 dígitos no modo de teste", () => {
+    process.env.ACEITAR_CPF_DE_TESTE = "sim";
+    expect(cpfAceito("123.456.789-00")).toBe(true);
+    expect(cpfAceito("11111111111")).toBe(true);
+    expect(cpfAceito("1234567890")).toBe(false);
+    delete process.env.ACEITAR_CPF_DE_TESTE;
   });
 });

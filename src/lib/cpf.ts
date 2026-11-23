@@ -23,3 +23,13 @@ export function formatarCpf(valor: string): string {
   if (cpf.length !== 11) return valor;
   return `${cpf.slice(0, 3)}.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-${cpf.slice(9)}`;
 }
+
+/**
+ * Regra usada nos cadastros e no login. Com ACEITAR_CPF_DE_TESTE=sim (só para testes),
+ * aceita qualquer número de 11 dígitos, sem conferir os dígitos verificadores.
+ * Em produção, remova a variável para voltar a exigir CPF verdadeiro.
+ */
+export function cpfAceito(valor: string): boolean {
+  if (process.env.ACEITAR_CPF_DE_TESTE === "sim") return /^\d{11}$/.test(limparCpf(valor));
+  return cpfValido(valor);
+}

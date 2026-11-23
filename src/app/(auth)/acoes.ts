@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { criarClienteAdmin } from "@/lib/supabase/admin";
 import { obterSessao } from "@/lib/auth";
-import { cpfValido, limparCpf } from "@/lib/cpf";
+import { cpfAceito, limparCpf } from "@/lib/cpf";
 import { validarNovaSenha } from "@/lib/senha";
 import { inicioDoPerfil } from "@/lib/rotulos";
 import type { Estado } from "@/lib/acoes";
@@ -52,7 +52,7 @@ export async function redefinirSenha(_: Estado, fd: FormData): Promise<Estado> {
 /** Envia o link de recuperação para o e-mail cadastrado no CPF. */
 export async function pedirRecuperacao(_: Estado, fd: FormData): Promise<Estado> {
   const cpf = limparCpf(String(fd.get("cpf") ?? ""));
-  if (!cpfValido(cpf)) return { erro: "CPF inválido." };
+  if (!cpfAceito(cpf)) return { erro: "CPF inválido." };
 
   // Mesma resposta em todos os casos, para não revelar quais CPFs existem.
   const resposta: Estado = {

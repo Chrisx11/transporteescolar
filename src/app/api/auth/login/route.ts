@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { criarClienteAdmin } from "@/lib/supabase/admin";
 import { criarClienteServidor } from "@/lib/supabase/server";
-import { cpfValido, limparCpf } from "@/lib/cpf";
+import { cpfAceito, limparCpf } from "@/lib/cpf";
 import { AREAS_LOGIN, ehPerfil, inicioDoPerfil, type Perfil } from "@/lib/rotulos";
 
 const JANELA_MIN = 15;
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   const cpf = limparCpf(corpo.cpf ?? "");
   const senha = corpo.senha ?? "";
   const area = corpo.perfil && ehPerfil(corpo.perfil) ? corpo.perfil : null;
-  if (!cpfValido(cpf) || !senha || !area) {
+  if (!cpfAceito(cpf) || !senha || !area) {
     return NextResponse.json({ erro: "Informe um CPF válido e a senha." }, { status: 400 });
   }
 

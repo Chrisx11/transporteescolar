@@ -1,7 +1,7 @@
 import "server-only";
 import { criarClienteAdmin } from "@/lib/supabase/admin";
 import { criarClienteServidor } from "@/lib/supabase/server";
-import { cpfValido, limparCpf } from "@/lib/cpf";
+import { cpfAceito, limparCpf } from "@/lib/cpf";
 import { gerarSenhaProvisoria } from "@/lib/senha";
 import { emailInterno, type Perfil } from "@/lib/rotulos";
 import { ErroValidacao } from "@/lib/acoes";
@@ -21,7 +21,7 @@ export type NovoUsuario = {
  */
 export async function criarUsuario(dados: NovoUsuario): Promise<{ id: string; senha: string }> {
   const cpf = limparCpf(dados.cpf);
-  if (!cpfValido(cpf)) throw new ErroValidacao("CPF inválido. Confira os números.");
+  if (!cpfAceito(cpf)) throw new ErroValidacao("CPF inválido. Confira os números.");
 
   const admin = criarClienteAdmin();
   const { data: existente } = await admin.from("usuarios").select("id").eq("cpf", cpf).maybeSingle();
