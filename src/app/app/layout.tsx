@@ -5,6 +5,7 @@ import { exigirPerfil } from "@/lib/auth";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { Avatar, Marca } from "@/components/ui";
 import { PERFIS } from "@/lib/rotulos";
+import { TrocarArea } from "@/components/trocar-area";
 
 /** Layout de celular (aluno e motorista). */
 export default async function LayoutApp({ children }: { children: React.ReactNode }) {
@@ -31,6 +32,8 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
   const naoLidos = count ?? 0;
 
   return (
+    <>
+    {sessao.admin && <TrocarArea atual={sessao.perfil === "motorista" ? "motorista" : "aluno"} />}
     <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-[#f4f6fb] sm:my-6 sm:min-h-[calc(100dvh-3rem)] sm:overflow-hidden sm:rounded-[2rem] sm:shadow-elevada">
       <header className="relative overflow-hidden bg-gradient-to-br from-azul-600 via-azul-700 to-azul-900 px-5 pb-16 pt-6 text-white">
         <div className="fundo-pontos absolute inset-0 opacity-50" aria-hidden />
@@ -76,5 +79,6 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
       </header>
       <main className="relative -mt-10 flex-1 animate-surgir px-4 pb-8">{children}</main>
     </div>
+    </>
   );
 }

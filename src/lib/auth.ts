@@ -1,5 +1,6 @@
 import "server-only";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { cache } from "react";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { inicioDoPerfil, type Perfil } from "@/lib/rotulos";
@@ -13,7 +14,14 @@ export type UsuarioSessao = {
   perfil: Perfil;
   ativo: boolean;
   troca_senha_obrigatoria: boolean;
+  /** Login de Admin (mesmo quando está vendo o app como aluno ou motorista). */
+  admin: boolean;
 };
+
+/** Cookie com a área que o Admin está vendo: "aluno", "motorista" ou ausente (painel). */
+export const COOKIE_MODO_ADMIN = "modo_admin";
+export type ModoAdmin = "aluno" | "motorista";
+export const ehModoAdmin = (v: unknown): v is ModoAdmin => v === "aluno" || v === "motorista";
 
 /** Usuário logado + registro em `usuarios`. Nulo se não houver sessão válida. */
 export const obterSessao = cache(async (): Promise<UsuarioSessao | null> => {
@@ -28,7 +36,13 @@ export const obterSessao = cache(async (): Promise<UsuarioSessao | null> => {
     .eq("id", user.id)
     .maybeSingle();
   if (!data || !data.ativo) return null;
-  return data as UsuarioSessao;
+  const sessao: UsuarioSessao = { ...(data as Omit<UsuarioSessao, "admin">), admin: data.perfil === "admin" };
+  // O Admin pode testar as telas de aluno e motorista com o próprio login.
+  if (sessao.admin) {
+    const modo = (await cookies()).get(COOKIE_MODO_ADMIN)?.value;
+    if (ehModoAdmin(modo)) sessao.perfil = modo;
+  }
+  return sessao;
 });
 
 /**

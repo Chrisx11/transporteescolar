@@ -1,4 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { cookies } from "next/headers";
+import { COOKIE_MODO_ADMIN, ehModoAdmin } from "@/lib/auth";
 import { criarClienteAdmin } from "@/lib/supabase/admin";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { cpfAceito, limparCpf } from "@/lib/cpf";
@@ -90,8 +92,17 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const destino = usuario.troca_senha_obrigatoria
-    ? "/trocar-senha"
-    : inicioDoPerfil(usuario.perfil as Perfil);
+  // Admin: a página de login escolhida define a área (aluno, motorista ou painel).
+  let perfilDestino = usuario.perfil as Perfil;
+  if (usuario.perfil === "admin") {
+    const jar = await cookies();
+    if (ehModoAdmin(area)) {
+      jar.set(COOKIE_MODO_ADMIN, area, { path: "/", httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production" });
+      perfilDestino = area;
+    } else {
+      jar.delete(COOKIE_MODO_ADMIN);
+    }
+  }
+  const destino = usuario.troca_senha_obrigatoria ? "/trocar-senha" : inicioDoPerfil(perfilDestino);
   return NextResponse.json({ destino });
 }

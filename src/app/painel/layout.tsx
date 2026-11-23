@@ -5,6 +5,7 @@ import { formatarCpf } from "@/lib/cpf";
 import { MenuLateral } from "./menu-lateral";
 import { BarraSuperior } from "./barra-superior";
 import { COOKIE_MENU } from "./navegacao";
+import { TrocarArea } from "@/components/trocar-area";
 
 export default async function LayoutPainel({ children }: { children: React.ReactNode }) {
   const sessao = await exigirPerfil("semeduc", "semtransp", "admin");
@@ -15,6 +16,7 @@ export default async function LayoutPainel({ children }: { children: React.React
     <div className="flex min-h-dvh">
       <MenuLateral perfil={sessao.perfil} recolhidoInicial={recolhido} />
       <div className="flex min-w-0 flex-1 flex-col">
+        {sessao.admin && <TrocarArea atual="painel" />}
         <BarraSuperior
           usuario={{
             nome: sessao.nome,
