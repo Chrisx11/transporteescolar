@@ -40,7 +40,11 @@ export async function salvarViagemModelo(_: Estado, fd: FormData): Promise<Estad
       : await supabase.from("viagens_modelo").insert(dados);
     if (error) throw error;
     revalidatePath("/painel/viagens");
-    return { ok: id ? "Viagem atualizada." : "Viagem cadastrada." };
+    return {
+      ok: id
+        ? "Viagem atualizada, também nas viagens de hoje e dos próximos dias que ainda não aconteceram."
+        : "Viagem cadastrada. As viagens de hoje e dos próximos dias já foram criadas.",
+    };
   });
 }
 

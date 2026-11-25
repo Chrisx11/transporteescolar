@@ -411,3 +411,10 @@ Construa uma fase por vez e só avance com a minha aprovação.
 8. Rotinas no **pg_cron**: gerar viagens (00:05 SP, 2 dias à frente) e fechar prazos (a cada 5 min). O prazo vale no segundo exato (conferido na função `reservar`).
 9. Testes usam `agora()`: igual a `now()`, exceto quando `app.ambiente = 'teste'`, que permite fixar `app.agora`.
 10. A volta 20:30 (condicional) não é gerada até a Fase 4.
+
+## 18. Decisões da fase de testes (25/11/2026)
+
+1. **Mudanças na viagem modelo e na escala modelo valem também nos dias já gerados** (substitui o item 3 da seção 17). Só afetam viagens de hoje em diante com status `agendada` ou `prazo_fechado`; prazo empurrado para o futuro reabre a reserva; um dia que deixaria de existir é apagado, exceto se tiver reserva ativa. Feito por gatilhos no banco (`sincronizar_viagens_do_modelo`, `reaplicar_escala_modelo`).
+2. **CPF fictício em testes:** com `ACEITAR_CPF_DE_TESTE=sim`, o app aceita qualquer número de 11 dígitos; o banco confere só o formato. Remover a variável em produção.
+3. **Admin testa todas as áreas com o próprio login:** a página de login escolhida (ou a faixa "Ver como") define a área (cookie `modo_admin`); o Admin tem cadastro de aluno e de motorista para isso.
+4. **Exclusão de viagem modelo:** só reservas ativas impedem; viagens do dia sem reserva ativa são apagadas junto.
