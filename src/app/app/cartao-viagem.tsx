@@ -17,10 +17,10 @@ import {
   TicketCheck,
   XCircle,
 } from "lucide-react";
-import { Botao, BotaoLink, Selo, cx } from "@/components/ui";
+import { Botao, BotaoLink, Selecao, Selo, cx } from "@/components/ui";
 import { useConfirmacao } from "@/components/confirmacao";
 import { CIDADES_CURTO } from "@/lib/rotulos";
-import { RESULTADOS, tempoRestante, type MinhaViagem } from "@/lib/viagens";
+import { RESULTADOS, tempoRestante, type MinhaViagem, type PontoOpcao } from "@/lib/viagens";
 import { cancelarReserva, reservarViagem } from "./acoes";
 
 const HORA = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
@@ -46,11 +46,12 @@ function useAgora() {
   return agora;
 }
 
-export function CartaoViagem({ v }: { v: MinhaViagem }) {
+export function CartaoViagem({ v, pontos }: { v: MinhaViagem; pontos: PontoOpcao[] }) {
   const router = useRouter();
   const agora = useAgora();
   const [pendente, iniciar] = useTransition();
   const [janela, confirmar] = useConfirmacao();
+  const [escolhendo, setEscolhendo] = useState(false);
   const ida = v.sentido === "ida";
   const Icone = ida ? ArrowUpRight : ArrowDownLeft;
   const saida = new Date(v.saida_em);
@@ -65,12 +66,20 @@ export function CartaoViagem({ v }: { v: MinhaViagem }) {
     if (venceu && v.status_viagem === "agendada") router.refresh();
   }, [venceu, v.status_viagem, router]);
 
-  function reservar() {
+  // Ida: embarca em Italva e desce na cidade. Volta: o contrário.
+  const cidadeEmbarque = ida ? "italva" : v.cidade;
+  const cidadeDesembarque = ida ? v.cidade : "italva";
+
+  function reservar(embarque: string | null, desembarque: string | null) {
     if (!v.viagem_dia_id) return;
+    const trocando = reservado;
     iniciar(async () => {
-      const r = await reservarViagem(v.viagem_dia_id!);
-      if (r.ok) toast.success(`${v.nome} reservada!`);
-      else toast.error(r.erro);
+      const r = await reservarViagem(v.viagem_dia_id!, embarque, desembarque);
+      if (r.ok) {
+        lembrarPontos(v.sentido, v.cidade, embarque, desembarque);
+        toast.success(trocando ? "Pontos atualizados." : `${v.nome} reservada!`);
+        setEscolhendo(false);
+      } else toast.error(r.erro);
       router.refresh();
     });
   }
@@ -126,12 +135,26 @@ export function CartaoViagem({ v }: { v: MinhaViagem }) {
       <div className="border-t border-slate-100 bg-slate-50/60 px-5 py-4">
         {cancelada ? (
           <Faixa icone={Ban} cor="text-red-600" titulo="Viagem cancelada" texto="Veja os avisos para saber o motivo." />
+        ) : escolhendo ? (
+          <EscolherPontos
+            pontos={pontos}
+            cidadeEmbarque={cidadeEmbarque}
+            cidadeDesembarque={cidadeDesembarque}
+            inicial={lembrados(v.sentido, v.cidade, v.ponto_embarque_id, v.ponto_desembarque_id)}
+            rotulo={reservado ? "Salvar pontos" : "Confirmar reserva"}
+            pendente={pendente}
+            aoConfirmar={reservar}
+            aoCancelar={() => setEscolhendo(false)}
+          />
         ) : reservado && v.pode_cancelar ? (
-          <div className="flex items-center justify-between gap-3">
-            <Faixa icone={CheckCircle2} cor="text-emerald-600" titulo="Reservado" texto={textoPrazo ?? undefined} />
-            <Botao variante="secundario" onClick={cancelar} disabled={pendente} className="h-9 px-3 text-xs">
-              {pendente ? <Loader2 className="animate-spin" /> : <XCircle />} Cancelar
-            </Botao>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-3">
+              <Faixa icone={CheckCircle2} cor="text-emerald-600" titulo="Reservado" texto={textoPrazo ?? undefined} />
+              <Botao variante="secundario" onClick={cancelar} disabled={pendente} className="h-9 px-3 text-xs">
+                {pendente ? <Loader2 className="animate-spin" /> : <XCircle />} Cancelar
+              </Botao>
+            </div>
+            <PontosEscolhidos v={v} aoTrocar={() => setEscolhendo(true)} />
           </div>
         ) : reservado ? (
           <div className="flex flex-col gap-3">
@@ -145,7 +168,8 @@ export function CartaoViagem({ v }: { v: MinhaViagem }) {
                   {v.onibus_prefixo ? `Seu ônibus: ${v.onibus_prefixo}` : "Definindo seu ônibus…"}
                 </p>
                 <p className="truncate text-sm text-slate-500">
-                  {v.ponto_nome ? `Embarque: ${v.ponto_nome}` : "Ponto de embarque não definido — fale com a secretaria."}
+                  {v.ponto_nome ? `Embarque: ${v.ponto_nome}` : "Ponto de embarque não escolhido"}
+                  {v.ponto_desembarque_nome ? ` · Desce: ${v.ponto_desembarque_nome}` : ""}
                 </p>
               </div>
               {v.resultado ? (
@@ -170,7 +194,7 @@ export function CartaoViagem({ v }: { v: MinhaViagem }) {
         ) : !v.motivo ? (
           <div className="flex items-center justify-between gap-3">
             <Faixa icone={Hourglass} cor="text-azul-600" titulo="Reserva aberta" texto={textoPrazo ?? undefined} />
-            <Botao onClick={reservar} disabled={pendente} className="h-11 px-5">
+            <Botao onClick={() => setEscolhendo(true)} disabled={pendente} className="h-11 px-5">
               {pendente ? <Loader2 className="animate-spin" /> : <TicketCheck />} Reservar
             </Botao>
           </div>
@@ -208,6 +232,98 @@ function Faixa({
       <div className="min-w-0">
         <p className="text-sm font-semibold text-slate-900">{titulo}</p>
         {texto && <p className="text-xs text-slate-500">{texto}</p>}
+      </div>
+    </div>
+  );
+}
+
+const NOME_CIDADE = { italva: "Italva", campos: "Campos", itaperuna: "Itaperuna" } as const;
+
+/** Últimos pontos usados pelo aluno para o mesmo sentido e cidade (salvos no celular). */
+const chavePontos = (sentido: string, cidade: string) => `pontos-${sentido}-${cidade}`;
+function lembrarPontos(sentido: string, cidade: string, embarque: string | null, desembarque: string | null) {
+  try {
+    localStorage.setItem(chavePontos(sentido, cidade), JSON.stringify({ embarque, desembarque }));
+  } catch {}
+}
+function lembrados(sentido: string, cidade: string, embarque: string | null, desembarque: string | null) {
+  let salvo: { embarque?: string | null; desembarque?: string | null } = {};
+  try {
+    salvo = JSON.parse(localStorage.getItem(chavePontos(sentido, cidade)) ?? "{}");
+  } catch {}
+  return { embarque: embarque ?? salvo.embarque ?? "", desembarque: desembarque ?? salvo.desembarque ?? "" };
+}
+
+function PontosEscolhidos({ v, aoTrocar }: { v: MinhaViagem; aoTrocar: () => void }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-2 text-xs ring-1 ring-slate-100">
+      <span className="min-w-0 text-slate-600">
+        <span className="font-medium text-slate-800">Embarque:</span> {v.ponto_nome ?? "não escolhido"}
+        <br />
+        <span className="font-medium text-slate-800">Desce:</span> {v.ponto_desembarque_nome ?? "não escolhido"}
+      </span>
+      <button type="button" onClick={aoTrocar} className="shrink-0 font-semibold text-azul-700">
+        Trocar pontos
+      </button>
+    </div>
+  );
+}
+
+function EscolherPontos({
+  pontos,
+  cidadeEmbarque,
+  cidadeDesembarque,
+  inicial,
+  rotulo,
+  pendente,
+  aoConfirmar,
+  aoCancelar,
+}: {
+  pontos: PontoOpcao[];
+  cidadeEmbarque: PontoOpcao["cidade"];
+  cidadeDesembarque: PontoOpcao["cidade"];
+  inicial: { embarque: string; desembarque: string };
+  rotulo: string;
+  pendente: boolean;
+  aoConfirmar: (embarque: string | null, desembarque: string | null) => void;
+  aoCancelar: () => void;
+}) {
+  const deEmbarque = pontos.filter((p) => p.cidade === cidadeEmbarque);
+  const deDesembarque = pontos.filter((p) => p.cidade === cidadeDesembarque);
+  const valido = (id: string, lista: PontoOpcao[]) => (lista.some((p) => p.id === id) ? id : "");
+  const [embarque, setEmbarque] = useState(valido(inicial.embarque, deEmbarque));
+  const [desembarque, setDesembarque] = useState(valido(inicial.desembarque, deDesembarque));
+  const falta = (deEmbarque.length > 0 && !embarque) || (deDesembarque.length > 0 && !desembarque);
+
+  const campo = (rotuloCampo: string, cidade: PontoOpcao["cidade"], lista: PontoOpcao[], valor: string, mudar: (s: string) => void) => (
+    <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+      {rotuloCampo} ({NOME_CIDADE[cidade]})
+      {lista.length === 0 ? (
+        <span className="text-xs font-normal text-slate-400">Nenhum ponto cadastrado nesta cidade.</span>
+      ) : (
+        <Selecao value={valor} onChange={(e) => mudar(e.target.value)}>
+          <option value="">— escolha —</option>
+          {lista.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.nome}
+            </option>
+          ))}
+        </Selecao>
+      )}
+    </label>
+  );
+
+  return (
+    <div className="flex flex-col gap-3">
+      {campo("Onde vai embarcar", cidadeEmbarque, deEmbarque, embarque, setEmbarque)}
+      {campo("Onde vai descer", cidadeDesembarque, deDesembarque, desembarque, setDesembarque)}
+      <div className="flex gap-2">
+        <Botao variante="secundario" onClick={aoCancelar} disabled={pendente} className="h-11 flex-1">
+          Voltar
+        </Botao>
+        <Botao onClick={() => aoConfirmar(embarque || null, desembarque || null)} disabled={pendente || falta} className="h-11 flex-[2]">
+          {pendente ? <Loader2 className="animate-spin" /> : <TicketCheck />} {rotulo}
+        </Botao>
       </div>
     </div>
   );

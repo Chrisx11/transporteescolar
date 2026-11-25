@@ -22,7 +22,13 @@ export type MinhaViagem = {
   embarque_de: string | null;
   embarque_ate: string | null;
   resultado: ResultadoFrequencia | null;
+  ponto_embarque_id: string | null;
+  ponto_desembarque_id: string | null;
+  ponto_desembarque_nome: string | null;
 };
+
+/** Ponto de embarque/desembarque (para o aluno escolher ao reservar). */
+export type PontoOpcao = { id: string; nome: string; cidade: "italva" | "campos" | "itaperuna"; ordem: number };
 
 export type ResultadoFrequencia = "presente" | "falta" | "nao_retornou" | "anulada";
 

@@ -8,11 +8,20 @@ import { mensagemErro } from "@/lib/acoes";
 type Resultado = { ok: true } | { ok: false; erro: string };
 
 /** Reserva um trecho. As regras (grade, prazo, calendário, matrícula) ficam na função do banco. */
-export async function reservarViagem(viagemDiaId: string): Promise<Resultado> {
+export async function reservarViagem(
+  viagemDiaId: string,
+  pontoEmbarque: string | null = null,
+  pontoDesembarque: string | null = null,
+): Promise<Resultado> {
   try {
     await sessaoComPerfil("aluno");
     const supabase = await criarClienteServidor();
-    const { error } = await supabase.rpc("reservar", { p_viagem: viagemDiaId });
+    // Reservar de novo a mesma viagem (com o prazo aberto) só troca os pontos.
+    const { error } = await supabase.rpc("reservar", {
+      p_viagem: viagemDiaId,
+      p_ponto_embarque: pontoEmbarque,
+      p_ponto_desembarque: pontoDesembarque,
+    });
     if (error) return { ok: false, erro: mensagemErro(error) };
     revalidatePath("/app");
     return { ok: true };

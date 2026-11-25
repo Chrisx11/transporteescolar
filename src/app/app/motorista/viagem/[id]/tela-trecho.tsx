@@ -46,6 +46,7 @@ type Aluno = {
   embarcado: boolean;
   tipo: "qr" | "manual" | null;
   motivo_manual: string | null;
+  desembarque_nome?: string | null;
 };
 
 type Dados = { trecho: Trecho; alunos: Aluno[]; salvoEm: string };
@@ -357,6 +358,7 @@ export function TelaTrecho({ vdo }: { vdo: string }) {
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium text-slate-900">{a.nome}</p>
+                    {a.desembarque_nome && <p className="truncate text-xs text-slate-500">Desce: {a.desembarque_nome}</p>}
                     <p className="flex items-center gap-1 text-xs text-slate-500">
                       {a.embarcado ? (
                         a.tipo === "manual" ? (

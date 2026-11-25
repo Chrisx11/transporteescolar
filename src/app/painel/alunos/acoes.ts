@@ -46,7 +46,8 @@ export async function criarAluno(_: Estado, fd: FormData): Promise<Estado> {
 }
 
 /**
- * Formulário único da tela do aluno: dados, situação, matrícula, pontos e rotas liberadas.
+ * Formulário único da tela do aluno: dados, situação, matrícula e rotas liberadas.
+ * Os pontos de embarque e desembarque o aluno escolhe ao reservar.
  * A instituição de cada viagem (dias sem aula) vem do curso do aluno na cidade dela,
  * calculada no banco (instituicao_do_aluno).
  */
@@ -66,21 +67,9 @@ export async function salvarAluno(_: Estado, fd: FormData): Promise<Estado> {
         situacao,
         motivo_devolucao: situacao === "ativo" ? null : campo(fd, "motivo_devolucao"),
         matricula_validade: validade,
-        ponto_ida_padrao_id: campo(fd, "ponto_ida_padrao_id"),
       })
       .eq("usuario_id", id);
     if (e1) throw e1;
-
-    // Ponto da volta: um por cidade; o escolhido define a cidade dele.
-    const pontoVolta = campo(fd, "ponto_volta_id");
-    if (pontoVolta) {
-      const { data: p, error } = await supabase.from("pontos").select("cidade").eq("id", pontoVolta).single();
-      if (error) throw error;
-      const r = await supabase
-        .from("aluno_pontos_volta")
-        .upsert({ aluno_id: id, cidade: p.cidade, ponto_id: pontoVolta }, { onConflict: "aluno_id,cidade" });
-      if (r.error) throw r.error;
-    }
 
     // Rotas liberadas (idas e voltas marcadas). Substituem a grade semanal antiga do aluno.
     if (fd.has("rotas_enviadas")) {

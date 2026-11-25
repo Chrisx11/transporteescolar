@@ -79,6 +79,42 @@ describe("rotas liberadas", () => {
     expect(r.find((x) => x.cidade === "itaperuna")?.motivo).toBe("ainda_nao_abriu");
   });
 
+  it("ao reservar escolhe embarque em Italva e desembarque na cidade; pode trocar no prazo", async () => {
+    const ponto = async (nome: string, cidade: string) =>
+      (await db.query<{ id: string }>("insert into pontos (nome, cidade, ordem) values ($1, $2, 1) returning id", [nome, cidade])).rows[0].id;
+    const praca = await ponto("Praça", "italva");
+    const rodo = await ponto("Rodoviária", "italva");
+    const uenfP = await ponto("Portão UENF", "campos");
+    const v = await viagemDia(ids.voltaNoiteCampos, "2026-10-26");
+    // Volta: embarque em Campos, desembarque em Italva. Ponto de Italva no embarque é recusado.
+    expect(await falhaComo(db, ALUNO, "select reservar($1, $2, $3)", [v, praca, rodo])).toMatch(/embarque em Campos/);
+    await como(db, ALUNO, "select reservar($1, $2, $3)", [v, uenfP, praca]);
+    await como(db, ALUNO, "select reservar($1, null, $2)", [v, rodo]); // troca só o desembarque
+    const r = await como<{ ponto_nome: string; ponto_desembarque_nome: string }>(
+      db,
+      ALUNO,
+      "select ponto_nome, ponto_desembarque_nome from minhas_viagens('2026-10-26') where viagem_dia_id = $1",
+      [v],
+    );
+    expect(r[0]).toEqual({ ponto_nome: "Portão UENF", ponto_desembarque_nome: "Rodoviária" });
+  });
+
+  it("SEMTRANSP move todos de um ponto para outro ônibus", async () => {
+    const on1 = (await db.query<{ id: string }>("insert into onibus (prefixo, placa, capacidade) values ('01', 'AAA1A11', 40) returning id")).rows[0].id;
+    const on2 = (await db.query<{ id: string }>("insert into onibus (prefixo, placa, capacidade) values ('02', 'BBB2B22', 40) returning id")).rows[0].id;
+    const v = await viagemDia(ids.voltaNoiteCampos, "2026-10-26");
+    const t1 = (await db.query<{ id: string }>("insert into viagem_dia_onibus (viagem_dia_id, onibus_id) values ($1, $2) returning id", [v, on1])).rows[0].id;
+    const t2 = (await db.query<{ id: string }>("insert into viagem_dia_onibus (viagem_dia_id, onibus_id) values ($1, $2) returning id", [v, on2])).rows[0].id;
+    await como(db, SEMTRANSP, "select alocar_viagem($1)", [v]);
+    const pontoUenf = (await db.query<{ ponto_id: string }>("select ponto_id from reservas where viagem_dia_id = $1 and status = 'ativa'", [v])).rows[0].ponto_id;
+    const [{ mover_ponto }] = await como<{ mover_ponto: number }>(db, SEMTRANSP, "select mover_ponto($1, $2, $3)", [v, pontoUenf, t2]);
+    expect(mover_ponto).toBeLessThanOrEqual(1);
+    const r = await db.query<{ vdo: string }>("select viagem_dia_onibus_id as vdo from reservas where viagem_dia_id = $1 and status = 'ativa'", [v]);
+    expect(r.rows.every((x) => x.vdo === t2)).toBe(true);
+    expect(t1).not.toBe(t2);
+    expect(await falhaComo(db, ALUNO, "select mover_ponto($1, $2, $3)", [v, pontoUenf, t1])).toMatch(/permissão/);
+  });
+
   it("aluno não libera rota para si mesmo", async () => {
     const erro = await falhaComo(db, ALUNO, "insert into aluno_viagens (aluno_id, viagem_modelo_id) values ($1, $2)", [ALUNO, ids.idaManhaCampos]);
     expect(erro).toMatch(/row-level security/i);

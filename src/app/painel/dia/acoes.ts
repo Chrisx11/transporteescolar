@@ -113,6 +113,23 @@ export async function marcarOcorrencia(_: Estado, fd: FormData): Promise<Estado>
   });
 }
 
+/** Move todos os alunos de um ponto de embarque para outro ônibus da mesma viagem. */
+export async function moverPonto(_: Estado, fd: FormData): Promise<Estado> {
+  return executar(async () => {
+    await sessaoComPerfil("semtransp");
+    const supabase = await criarClienteServidor();
+    const ponto = campo(fd, "ponto_id");
+    const { data, error } = await supabase.rpc("mover_ponto", {
+      p_viagem: campoObrigatorio(fd, "viagem_id", "Viagem"),
+      p_ponto: ponto === "sem" ? null : ponto,
+      p_destino: campoObrigatorio(fd, "destino", "Ônibus"),
+    });
+    if (error) throw error;
+    atualizar();
+    return { ok: `${data ?? 0} aluno(s) movido(s).` };
+  });
+}
+
 export async function moverReserva(_: Estado, fd: FormData): Promise<Estado> {
   return executar(async () => {
     await sessaoComPerfil("semtransp");

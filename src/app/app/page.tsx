@@ -5,7 +5,7 @@ import { exigirPerfil } from "@/lib/auth";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { Aviso, Vazio, cx } from "@/components/ui";
 import { DIAS_SEMANA, dataBR, diaSemanaIso, hojeSP, somarDias } from "@/lib/tempo";
-import type { MinhaViagem } from "@/lib/viagens";
+import type { MinhaViagem, PontoOpcao } from "@/lib/viagens";
 import { CartaoViagem } from "./cartao-viagem";
 
 /**
@@ -20,10 +20,11 @@ export default async function HojeAluno({ searchParams }: { searchParams: Promis
   const hoje = hojeSP();
   const amanha = somarDias(hoje, 1);
 
-  const [{ data: aluno }, { data: deHoje }, { data: deAmanha }] = await Promise.all([
+  const [{ data: aluno }, { data: deHoje }, { data: deAmanha }, { data: pontos }] = await Promise.all([
     supabase.from("alunos").select("situacao, matricula_validade").eq("usuario_id", sessao.id).maybeSingle(),
     supabase.rpc("minhas_viagens", { p_data: hoje }),
     supabase.rpc("minhas_viagens", { p_data: amanha }),
+    supabase.from("pontos").select("id, nome, cidade, ordem").eq("ativo", true).order("ordem").order("nome"),
   ]);
 
   const listaAmanha = (deAmanha ?? []) as MinhaViagem[];
@@ -81,7 +82,7 @@ export default async function HojeAluno({ searchParams }: { searchParams: Promis
       ) : lista.every((v) => v.motivo === "sem_operacao") ? (
         <Vazio icone={CalendarX2}>Não há transporte em {dataBR(data)} (feriado ou recesso).</Vazio>
       ) : (
-        lista.map((v) => <CartaoViagem key={`${data}-${v.sentido}`} v={v} />)
+        lista.map((v) => <CartaoViagem key={`${data}-${v.viagem_dia_id ?? v.cidade + v.nome}`} v={v} pontos={(pontos ?? []) as PontoOpcao[]} />)
       )}
     </div>
   );

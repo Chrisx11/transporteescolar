@@ -23,7 +23,6 @@ import { RotasAluno, type Rota } from "./rotas-aluno";
 
 export const metadata: Metadata = { title: "Aluno" };
 
-type Ponto = { id: string; nome: string; cidade: Cidade; ordem: number };
 type Viagem = { id: string; cidade: Cidade; nome: string; sentido: Sentido; hora_saida: string; dias_semana: number[] };
 
 export default async function PaginaAluno({ params }: { params: Promise<{ id: string }> }) {
@@ -35,20 +34,16 @@ export default async function PaginaAluno({ params }: { params: Promise<{ id: st
     { data: usuario },
     { data: aluno },
     { data: vinculos },
-    { data: pontosVolta },
     { data: rotasAluno },
     { data: instituicoes },
-    { data: pontos },
     { data: viagens },
     { data: anotacoes },
   ] = await Promise.all([
     supabase.from("usuarios").select("nome, cpf, email, telefone, ativo, troca_senha_obrigatoria").eq("id", id).maybeSingle(),
     supabase.from("alunos").select("*").eq("usuario_id", id).maybeSingle(),
     supabase.from("aluno_vinculos").select("id, curso, periodo, turno, instituicao:instituicoes(nome, cidade)").eq("aluno_id", id),
-    supabase.from("aluno_pontos_volta").select("cidade, ponto_id").eq("aluno_id", id),
     supabase.from("aluno_viagens").select("viagem_modelo_id").eq("aluno_id", id),
     supabase.from("instituicoes").select("id, nome, cidade").eq("ativa", true).order("nome"),
-    supabase.from("pontos").select("id, nome, cidade, ordem").eq("ativo", true).order("ordem"),
     supabase
       .from("viagens_modelo")
       .select("id, cidade, nome, sentido, hora_saida, dias_semana")
@@ -68,7 +63,6 @@ export default async function PaginaAluno({ params }: { params: Promise<{ id: st
     aluno.comprovante_path ? supabase.storage.from("documentos").createSignedUrl(aluno.comprovante_path, 3600) : null,
   ]);
 
-  const listaPontos = (pontos ?? []) as Ponto[];
   const rotas: Rota[] = ((viagens ?? []) as Viagem[])
     .filter((v) => v.cidade === "campos" || v.cidade === "itaperuna")
     .map((v) => ({
@@ -80,7 +74,6 @@ export default async function PaginaAluno({ params }: { params: Promise<{ id: st
       dias: v.dias_semana,
     }));
   const situacao = aluno.situacao as keyof typeof SITUACOES_ALUNO;
-  const pontoVolta = (pontosVolta ?? [])[0]?.ponto_id ?? "";
 
   return (
     <>
@@ -124,39 +117,6 @@ export default async function PaginaAluno({ params }: { params: Promise<{ id: st
               </Campo>
               <Campo rotulo="Motivo (só se devolver ou inativar)" className="sm:col-span-2">
                 <Entrada name="motivo_devolucao" defaultValue={aluno.motivo_devolucao ?? ""} />
-              </Campo>
-            </div>
-          </Secao>
-
-          <Secao titulo="Onde embarca">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Campo rotulo="Na ida (em Italva)">
-                <Selecao name="ponto_ida_padrao_id" defaultValue={aluno.ponto_ida_padrao_id ?? ""}>
-                  <option value="">— escolha —</option>
-                  {listaPontos
-                    .filter((p) => p.cidade === "italva")
-                    .map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.nome}
-                      </option>
-                    ))}
-                </Selecao>
-              </Campo>
-              <Campo rotulo="Na volta (na faculdade)">
-                <Selecao name="ponto_volta_id" defaultValue={pontoVolta}>
-                  <option value="">— escolha —</option>
-                  {(["campos", "itaperuna"] as Cidade[]).map((c) => (
-                    <optgroup key={c} label={CIDADES[c]}>
-                      {listaPontos
-                        .filter((p) => p.cidade === c)
-                        .map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.nome}
-                          </option>
-                        ))}
-                    </optgroup>
-                  ))}
-                </Selecao>
               </Campo>
             </div>
           </Secao>
