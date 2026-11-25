@@ -1,7 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const ROTAS_PUBLICAS = ["/login", "/esqueci-senha", "/auth", "/offline", "/api/auth/login"];
+// "/dev": prévias de tela só do servidor local (as páginas dão 404 em produção).
+const ROTAS_PUBLICAS = ["/login", "/esqueci-senha", "/auth", "/offline", "/api/auth/login", "/dev"];
 
 export async function middleware(request: NextRequest) {
   let resposta = NextResponse.next({ request });
