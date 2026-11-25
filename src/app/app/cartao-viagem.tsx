@@ -13,13 +13,14 @@ import {
   Hourglass,
   Loader2,
   MapPin,
+  ScanLine,
   TicketCheck,
   XCircle,
 } from "lucide-react";
-import { Botao, cx } from "@/components/ui";
+import { Botao, BotaoLink, Selo, cx } from "@/components/ui";
 import { useConfirmacao } from "@/components/confirmacao";
 import { CIDADES_CURTO } from "@/lib/rotulos";
-import { tempoRestante, type MinhaViagem } from "@/lib/viagens";
+import { RESULTADOS, tempoRestante, type MinhaViagem } from "@/lib/viagens";
 import { cancelarReserva, reservarViagem } from "./acoes";
 
 const HORA = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
@@ -133,19 +134,38 @@ export function CartaoViagem({ v }: { v: MinhaViagem }) {
             </Botao>
           </div>
         ) : reservado ? (
-          <div className="flex items-center gap-4">
-            <span className="flex size-14 shrink-0 flex-col items-center justify-center rounded-2xl bg-azul-600 text-white shadow-lg shadow-azul-600/30">
-              <Bus className="size-4 opacity-80" />
-              <span className="text-lg font-black leading-none">{v.onibus_prefixo ?? "–"}</span>
-            </span>
-            <div className="min-w-0">
-              <p className="font-semibold text-slate-900">
-                {v.onibus_prefixo ? `Seu ônibus: ${v.onibus_prefixo}` : "Definindo seu ônibus…"}
-              </p>
-              <p className="truncate text-sm text-slate-500">
-                {v.ponto_nome ? `Embarque: ${v.ponto_nome}` : "Ponto de embarque não definido — fale com a secretaria."}
-              </p>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-4">
+              <span className="flex size-14 shrink-0 flex-col items-center justify-center rounded-2xl bg-azul-600 text-white shadow-lg shadow-azul-600/30">
+                <Bus className="size-4 opacity-80" />
+                <span className="text-lg font-black leading-none">{v.onibus_prefixo ?? "–"}</span>
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-slate-900">
+                  {v.onibus_prefixo ? `Seu ônibus: ${v.onibus_prefixo}` : "Definindo seu ônibus…"}
+                </p>
+                <p className="truncate text-sm text-slate-500">
+                  {v.ponto_nome ? `Embarque: ${v.ponto_nome}` : "Ponto de embarque não definido — fale com a secretaria."}
+                </p>
+              </div>
+              {v.resultado ? (
+                <Selo cor={RESULTADOS[v.resultado].cor}>{RESULTADOS[v.resultado].rotulo}</Selo>
+              ) : v.embarcado ? (
+                <Selo cor="verde">Embarcado</Selo>
+              ) : null}
             </div>
+            {!v.embarcado && !v.resultado && v.embarque_de && v.embarque_ate && (
+              agora >= new Date(v.embarque_de).getTime() && agora <= new Date(v.embarque_ate).getTime() ? (
+                <BotaoLink href="/app/ler-qr" className="h-12 w-full text-base">
+                  <ScanLine /> Ler QR code do ônibus
+                </BotaoLink>
+              ) : agora < new Date(v.embarque_de).getTime() ? (
+                <p className="flex items-center gap-1.5 text-xs text-slate-500">
+                  <ScanLine className="size-3.5" /> Leitura do QR das {HORA.format(new Date(v.embarque_de))} às{" "}
+                  {HORA.format(new Date(v.embarque_ate))}
+                </p>
+              ) : null
+            )}
           </div>
         ) : !v.motivo ? (
           <div className="flex items-center justify-between gap-3">

@@ -34,6 +34,7 @@ export function TempoReal() {
         .on("postgres_changes", { event: "*", schema: "public", table: "reservas" }, recarregar)
         .on("postgres_changes", { event: "*", schema: "public", table: "viagens_dia" }, recarregar)
         .on("postgres_changes", { event: "*", schema: "public", table: "viagem_dia_onibus" }, recarregar)
+        .on("postgres_changes", { event: "*", schema: "public", table: "embarques" }, recarregar)
         .subscribe((status) => setConectado(status === "SUBSCRIBED"));
     })();
 

@@ -42,30 +42,53 @@ const localizacaoWeb: Localizacao = {
   },
 };
 
-// Leitura de QR na web (implementação completa na Fase 3). Usa o BarcodeDetector
-// quando existe; nos demais aparelhos o aluno lê com a câmera do próprio celular,
-// que abre o link /embarque/<token> no app.
+// Leitura de QR na web. Usa o BarcodeDetector do aparelho quando existe (Android/Chrome);
+// nos demais (iPhone/Safari) decodifica os quadros da câmera com a biblioteca jsQR.
+// O aluno também pode ler com a câmera do próprio celular, que abre o link /embarque/<token>.
 let fluxo: MediaStream | null = null;
 const leitorWeb: LeitorQR = {
   async disponivel() {
-    return typeof window !== "undefined" && "BarcodeDetector" in window && !!navigator.mediaDevices;
+    return typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia;
   },
   async ler(video) {
     type Detector = { detect(s: HTMLVideoElement): Promise<{ rawValue: string }[]> };
     const Ctor = (window as unknown as { BarcodeDetector?: new (o: object) => Detector }).BarcodeDetector;
-    if (!Ctor) return null;
-    fluxo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+    fluxo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
     video.srcObject = fluxo;
+    video.setAttribute("playsinline", "true");
     await video.play();
-    const detector = new Ctor({ formats: ["qr_code"] });
+
+    let detector: Detector | null = null;
+    if (Ctor) {
+      try {
+        detector = new Ctor({ formats: ["qr_code"] });
+      } catch {
+        detector = null;
+      }
+    }
+    const jsQR = detector ? null : (await import("jsqr")).default;
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
     while (fluxo) {
-      const achados = await detector.detect(video).catch(() => []);
-      if (achados.length) {
-        const valor = achados[0].rawValue;
+      let valor: string | null = null;
+      if (detector) {
+        const achados = await detector.detect(video).catch(() => []);
+        valor = achados[0]?.rawValue ?? null;
+      } else if (jsQR && ctx && video.videoWidth) {
+        // Reduz o quadro para ler mais rápido em celulares simples.
+        const escala = Math.min(1, 640 / video.videoWidth);
+        canvas.width = Math.round(video.videoWidth * escala);
+        canvas.height = Math.round(video.videoHeight * escala);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        valor = jsQR(img.data, img.width, img.height, { inversionAttempts: "dontInvert" })?.data ?? null;
+      }
+      if (valor) {
         this.parar();
         return valor;
       }
-      await new Promise((r) => setTimeout(r, 250));
+      await new Promise((r) => setTimeout(r, 200));
     }
     return null;
   },

@@ -98,6 +98,21 @@ export async function cancelarViagem(_: Estado, fd: FormData): Promise<Estado> {
   });
 }
 
+/** Viagem com ocorrência (RN16): anula faltas e "não retornou" e avisa os alunos. */
+export async function marcarOcorrencia(_: Estado, fd: FormData): Promise<Estado> {
+  return executar(async () => {
+    await sessaoComPerfil("semtransp");
+    const supabase = await criarClienteServidor();
+    const { data, error } = await supabase.rpc("marcar_ocorrencia", {
+      p_viagem: campoObrigatorio(fd, "id", "id"),
+      p_descricao: campoObrigatorio(fd, "descricao", "Descrição"),
+    });
+    if (error) throw error;
+    atualizar();
+    return { ok: `Ocorrência registrada. Faltas anuladas e ${data ?? 0} aluno(s) avisado(s).` };
+  });
+}
+
 export async function moverReserva(_: Estado, fd: FormData): Promise<Estado> {
   return executar(async () => {
     await sessaoComPerfil("semtransp");

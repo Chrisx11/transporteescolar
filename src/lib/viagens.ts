@@ -18,6 +18,19 @@ export type MinhaViagem = {
   motivo: string | null;
   mensagem: string | null;
   pode_cancelar: boolean;
+  embarcado: boolean;
+  embarque_de: string | null;
+  embarque_ate: string | null;
+  resultado: ResultadoFrequencia | null;
+};
+
+export type ResultadoFrequencia = "presente" | "falta" | "nao_retornou" | "anulada";
+
+export const RESULTADOS: Record<ResultadoFrequencia, { rotulo: string; cor: "verde" | "vermelho" | "amarelo" | "cinza" }> = {
+  presente: { rotulo: "Presente", cor: "verde" },
+  falta: { rotulo: "Falta", cor: "vermelho" },
+  nao_retornou: { rotulo: "Não retornou", cor: "amarelo" },
+  anulada: { rotulo: "Anulada (ocorrência)", cor: "cinza" },
 };
 
 export const STATUS_VIAGEM: Record<StatusViagem, { rotulo: string; cor: "azul" | "amarelo" | "verde" | "cinza" | "vermelho" }> = {

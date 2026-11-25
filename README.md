@@ -3,7 +3,7 @@
 Sistema de logística do transporte universitário (reservas, embarque por QR code e frequência).
 A especificação completa está em [CLAUDE.md](CLAUDE.md).
 
-**Fase atual: 2. Reservas e operação do dia**
+**Fase atual: 3. Embarque**
 
 ## Como rodar
 
@@ -46,7 +46,8 @@ npm test
 | `src/app/api/auth/login/` | Login por CPF (feito no servidor) |
 | `src/app/painel/` | Telas de computador das secretarias e do Admin |
 | `src/app/app/` | Telas de celular do aluno e do motorista |
-| `src/app/embarque/[token]/` | Destino do QR code do ônibus (validação na Fase 3) |
+| `src/app/embarque/[token]/` | Destino do QR code do ônibus: confere reserva, horário e distância |
+| `src/app/app/motorista/viagem/[id]/` | Trecho do motorista: lista por ponto, presença manual, localização e encerrar |
 | `src/lib/device/` | Câmera, localização e notificações atrás de interfaces (para o Capacitor no futuro) |
 | `src/lib/usuarios.ts` | Criação de logins e senhas provisórias |
 | `public/sw.js` | Service worker do PWA |
@@ -58,5 +59,7 @@ Cada fase tem um arquivo para colar no SQL Editor, rodado **uma única vez e na 
 1. `supabase/sql-editor-fase1.sql` – base e cadastros.
 2. `supabase/sql-editor-fase2.sql` – reservas e operação do dia. **Antes**, ative a extensão **pg_cron** em
    *Database → Extensions*: assim as rotinas (gerar viagens às 00:05 e fechar prazos a cada 5 min) já ficam agendadas.
+
+3. `supabase/sql-editor-fase3.sql` – embarque (QR code, listas do motorista, frequência e ocorrência).
 
 Para conferir as rotinas: `select jobname, schedule from cron.job;`

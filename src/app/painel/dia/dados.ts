@@ -13,6 +13,9 @@ export type OnibusDoDia = {
   motorista_nome: string | null;
   extra: boolean;
   alocados: number;
+  embarcados: number;
+  iniciada_em: string | null;
+  encerrada_em: string | null;
 };
 
 export type ViagemDoDia = {
@@ -30,6 +33,9 @@ export type ViagemDoDia = {
   capacidade: number;
   semPonto: number;
   semOnibus: number;
+  embarcados: number;
+  faltas: number;
+  naoRetornou: number;
   alertas: { tipo: "erro" | "alerta"; texto: string }[];
 };
 
@@ -39,6 +45,8 @@ type LinhaOnibus = {
   onibus_id: string;
   motorista_id: string | null;
   extra: boolean;
+  iniciada_em: string | null;
+  encerrada_em: string | null;
   onibus: { prefixo: string; capacidade: number; situacao: string } | null;
   motorista: { usuario: { nome: string } | null } | null;
 };
@@ -54,13 +62,20 @@ export async function carregarDia(data: string): Promise<ViagemDoDia[]> {
   const ids = (viagens ?? []).map((v) => v.id);
   if (ids.length === 0) return [];
 
-  const [{ data: escala }, { data: reservas }] = await Promise.all([
+  const [{ data: escala }, { data: reservas }, { data: freq }] = await Promise.all([
     supabase
       .from("viagem_dia_onibus")
-      .select("id, viagem_dia_id, onibus_id, motorista_id, extra, onibus(prefixo, capacidade, situacao), motorista:motoristas(usuario:usuarios(nome))")
+      .select("id, viagem_dia_id, onibus_id, motorista_id, extra, iniciada_em, encerrada_em, onibus(prefixo, capacidade, situacao), motorista:motoristas(usuario:usuarios(nome))")
       .in("viagem_dia_id", ids),
-    supabase.from("reservas").select("viagem_dia_id, viagem_dia_onibus_id, ponto_id").in("viagem_dia_id", ids).eq("status", "ativa"),
+    supabase
+      .from("reservas")
+      .select("viagem_dia_id, viagem_dia_onibus_id, ponto_id, embarque:embarques(id)")
+      .in("viagem_dia_id", ids)
+      .eq("status", "ativa"),
+    supabase.from("frequencia").select("viagem_dia_id, resultado").in("viagem_dia_id", ids),
   ]);
+  const embarcou = (r: { embarque: unknown }) => (Array.isArray(r.embarque) ? r.embarque.length > 0 : !!r.embarque);
+  const frequencia = freq ?? [];
 
   const linhas = (escala ?? []) as unknown as LinhaOnibus[];
   const res = reservas ?? [];
@@ -79,6 +94,9 @@ export async function carregarDia(data: string): Promise<ViagemDoDia[]> {
         motorista_nome: l.motorista?.usuario?.nome ?? null,
         extra: l.extra,
         alocados: daViagem.filter((r) => r.viagem_dia_onibus_id === l.id).length,
+        embarcados: daViagem.filter((r) => r.viagem_dia_onibus_id === l.id && embarcou(r)).length,
+        iniciada_em: l.iniciada_em,
+        encerrada_em: l.encerrada_em,
       }))
       .sort((a, b) => a.prefixo.localeCompare(b.prefixo, "pt-BR", { numeric: true }));
 
@@ -103,12 +121,15 @@ export async function carregarDia(data: string): Promise<ViagemDoDia[]> {
     }
 
     return {
-      ...(v as Omit<ViagemDoDia, "onibus" | "reservas" | "capacidade" | "semPonto" | "semOnibus" | "alertas">),
+      ...(v as Omit<ViagemDoDia, "onibus" | "reservas" | "capacidade" | "semPonto" | "semOnibus" | "embarcados" | "faltas" | "naoRetornou" | "alertas">),
       onibus,
       reservas: daViagem.length,
       capacidade,
       semPonto,
       semOnibus,
+      embarcados: daViagem.filter(embarcou).length,
+      faltas: frequencia.filter((f) => f.viagem_dia_id === v.id && f.resultado === "falta").length,
+      naoRetornou: frequencia.filter((f) => f.viagem_dia_id === v.id && f.resultado === "nao_retornou").length,
       alertas,
     };
   });

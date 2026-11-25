@@ -15,6 +15,7 @@ import {
   Plus,
   RefreshCw,
   RotateCcw,
+  ScanLine,
   Shuffle,
   Trash2,
   Users,
@@ -32,6 +33,7 @@ import {
   adicionarOnibusDia,
   cancelarViagem,
   gerarViagens,
+  marcarOcorrencia,
   reaplicarEscala,
   realocar,
   removerOnibusDia,
@@ -122,7 +124,23 @@ function CartaoViagemDia({ v, onibus, motoristas }: { v: ViagemDoDia; onibus: Op
 
       <div className="flex flex-1 flex-col gap-4 px-5 pb-5">
         {cancelada && v.ocorrencia_descricao && <Aviso tipo="erro">Cancelada: {v.ocorrencia_descricao}</Aviso>}
+        {v.status === "com_ocorrencia" && v.ocorrencia_descricao && (
+          <Aviso tipo="erro">Ocorrência: {v.ocorrencia_descricao} (faltas anuladas)</Aviso>
+        )}
         {reservavel && <BarraOcupacao reservas={v.reservas} capacidade={v.capacidade} />}
+        {reservavel && ["em_andamento", "encerrada", "com_ocorrencia"].includes(v.status) && (
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <Selo cor="verde">
+              <ScanLine className="size-3" /> {v.embarcados} de {v.reservas} embarcados
+            </Selo>
+            {v.faltas > 0 && <Selo cor="vermelho">{v.faltas} falta(s)</Selo>}
+            {v.naoRetornou > 0 && (
+              <Link href={`/painel/dia/${v.id}`}>
+                <Selo cor="amarelo">{v.naoRetornou} não retornou</Selo>
+              </Link>
+            )}
+          </div>
+        )}
 
         {v.alertas.length > 0 && (
           <ul className="flex flex-col gap-1.5">
@@ -152,11 +170,19 @@ function CartaoViagemDia({ v, onibus, motoristas }: { v: ViagemDoDia; onibus: Op
                   {reservavel ? (
                     <>
                       <Users className="size-3.5 text-slate-400" /> {o.alocados}/{o.capacidade}
+                      {o.iniciada_em && (
+                        <span className="text-xs font-normal text-slate-500">· {o.embarcados} embarcados</span>
+                      )}
                     </>
                   ) : (
                     <>{o.capacidade} lugares</>
                   )}
                   {o.extra && <Selo cor="azul">extra</Selo>}
+                  {o.encerrada_em ? (
+                    <Selo cor="cinza">encerrado</Selo>
+                  ) : o.iniciada_em ? (
+                    <Selo cor="verde">em viagem</Selo>
+                  ) : null}
                 </p>
                 {!cancelada ? (
                   <Formulario acao={trocarMotoristaDia} className="mt-1 flex-row items-center gap-1.5">
@@ -251,8 +277,26 @@ function CartaoViagemDia({ v, onibus, motoristas }: { v: ViagemDoDia; onibus: Op
             confirmar="Trocar os ônibus desta viagem pelos da escala modelo? Ônibus extras serão removidos."
           />
         )}
-        {!cancelada && v.status !== "encerrada" && (
+        {reservavel && !cancelada && v.status !== "com_ocorrencia" && v.status !== "agendada" && (
           <details className="ml-auto">
+            <summary className="flex h-8 cursor-pointer list-none items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-amber-700 hover:bg-amber-50">
+              <AlertTriangle className="size-3.5" /> Marcar ocorrência
+            </summary>
+            <Formulario
+              acao={marcarOcorrencia}
+              confirmar="Marcar esta viagem com ocorrência? As faltas serão anuladas e os alunos avisados."
+              className="mt-2 gap-2"
+            >
+              <input type="hidden" name="id" value={v.id} />
+              <Entrada name="descricao" required placeholder="O que aconteceu (ex.: pane, atraso grave)" />
+              <BotaoEnviar variante="secundario" className="h-9">
+                Registrar ocorrência
+              </BotaoEnviar>
+            </Formulario>
+          </details>
+        )}
+        {!cancelada && v.status !== "encerrada" && v.status !== "com_ocorrencia" && (
+          <details className={cx(!(reservavel && v.status !== "agendada") && "ml-auto")}>
             <summary className="flex h-8 cursor-pointer list-none items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-red-600 hover:bg-red-50">
               <Ban className="size-3.5" /> Cancelar viagem
             </summary>

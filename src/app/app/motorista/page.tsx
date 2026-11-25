@@ -1,4 +1,5 @@
-import { ArrowDownLeft, ArrowUpRight, Bus, CalendarCheck, Clock3, MoveRight, Users } from "lucide-react";
+import Link from "next/link";
+import { ArrowDownLeft, ArrowUpRight, Bus, CalendarCheck, ChevronRight, Clock3, MoveRight, Users } from "lucide-react";
 import { exigirPerfil } from "@/lib/auth";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { Selo, Vazio, cx } from "@/components/ui";
@@ -20,7 +21,7 @@ const ESTILO: Record<Sentido, { icone: typeof Bus; cor: string }> = {
 
 const HORA = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
 
-/** Viagens do dia do motorista (escala do dia). Listas de embarque chegam na Fase 3. */
+/** Viagens do dia do motorista (escala do dia). Cada uma abre a lista de embarque. */
 export default async function InicioMotorista() {
   const sessao = await exigirPerfil("motorista");
   const supabase = await criarClienteServidor();
@@ -96,6 +97,20 @@ export default async function InicioMotorista() {
                     </span>
                   )}
                 </div>
+                {v.status !== "cancelada" && (
+                  <Link
+                    href={`/app/motorista/viagem/${l.id}`}
+                    className={cx(
+                      "flex h-12 items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-colors",
+                      v.status === "encerrada"
+                        ? "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                        : "bg-azul-600 text-white shadow-md shadow-azul-600/30 hover:bg-azul-700",
+                    )}
+                  >
+                    {v.status === "encerrada" ? "Ver lista" : v.status === "em_andamento" ? "Abrir lista" : "Abrir viagem"}
+                    <ChevronRight className="size-4" />
+                  </Link>
+                )}
               </li>
             );
           })}

@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Bus, ListChecks, MapPin, UserRound } from "lucide-react";
+import { ArrowLeft, Bus, Hand, ListChecks, MapPin, QrCode, UserRound } from "lucide-react";
 import { exigirPerfil } from "@/lib/auth";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { BotaoEnviar, Formulario } from "@/components/formulario";
 import { BotaoLink, Cartao, Selecao, Selo, Titulo, Vazio } from "@/components/ui";
 import { CIDADES, SENTIDOS, type Cidade, type Sentido } from "@/lib/rotulos";
 import { dataBR } from "@/lib/tempo";
-import { STATUS_VIAGEM, type StatusViagem } from "@/lib/viagens";
+import { RESULTADOS, STATUS_VIAGEM, type ResultadoFrequencia, type StatusViagem } from "@/lib/viagens";
 import { TempoReal } from "../tempo-real";
 import { moverReserva } from "../acoes";
 
@@ -20,7 +20,11 @@ type Reserva = {
   viagem_dia_onibus_id: string | null;
   aluno: { usuario: { nome: string; telefone: string | null } | null } | null;
   ponto: { nome: string; ordem: number } | null;
+  embarque: Embarque | Embarque[] | null;
+  frequencia: { resultado: ResultadoFrequencia } | { resultado: ResultadoFrequencia }[] | null;
 };
+type Embarque = { tipo: "qr" | "manual"; motivo_manual: string | null; verificado_localizacao: boolean; registrado_em: string };
+const um = <T,>(x: T | T[] | null): T | null => (Array.isArray(x) ? (x[0] ?? null) : x);
 
 /** Lista de alunos de uma viagem do dia, por ônibus, com opção de mover. */
 export default async function AlunosDaViagem({ params }: { params: Promise<{ id: string }> }) {
@@ -33,7 +37,9 @@ export default async function AlunosDaViagem({ params }: { params: Promise<{ id:
     supabase.from("viagem_dia_onibus").select("id, onibus(prefixo, capacidade)").eq("viagem_dia_id", id),
     supabase
       .from("reservas")
-      .select("id, viagem_dia_onibus_id, aluno:alunos(usuario:usuarios(nome, telefone)), ponto:pontos(nome, ordem)")
+      .select(
+        "id, viagem_dia_onibus_id, aluno:alunos(usuario:usuarios(nome, telefone)), ponto:pontos(nome, ordem), embarque:embarques(tipo, motivo_manual, verificado_localizacao, registrado_em), frequencia(resultado)",
+      )
       .eq("viagem_dia_id", id)
       .eq("status", "ativa"),
   ]);
@@ -52,6 +58,7 @@ export default async function AlunosDaViagem({ params }: { params: Promise<{ id:
     { chave: "sem", titulo: "Sem ônibus definido", capacidade: 0, itens: lista.filter((r) => !r.viagem_dia_onibus_id) },
   ].filter((g) => g.chave !== "sem" || g.itens.length > 0);
   const status = STATUS_VIAGEM[v.status as StatusViagem];
+  const naoRetornou = lista.filter((r) => um(r.frequencia)?.resultado === "nao_retornou");
 
   return (
     <>
@@ -71,6 +78,21 @@ export default async function AlunosDaViagem({ params }: { params: Promise<{ id:
           {v.nome} <Selo cor={status.cor}>{status.rotulo}</Selo>
         </span>
       </Titulo>
+
+      {naoRetornou.length > 0 && (
+        <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+          <p className="font-semibold text-amber-900">Não retornou ({naoRetornou.length})</p>
+          <p className="text-sm text-amber-800">Embarcaram na ida de hoje e não leram o QR nesta volta.</p>
+          <ul className="mt-2 flex flex-wrap gap-2">
+            {naoRetornou.map((r) => (
+              <li key={r.id} className="rounded-lg bg-white px-3 py-1.5 text-sm text-slate-800 ring-1 ring-amber-200">
+                {r.aluno?.usuario?.nome}
+                {r.aluno?.usuario?.telefone && <span className="ml-2 text-xs text-slate-500">{r.aluno.usuario.telefone}</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {lista.length === 0 ? (
         <Vazio icone={UserRound}>Nenhum aluno reservou esta viagem.</Vazio>
@@ -101,7 +123,11 @@ export default async function AlunosDaViagem({ params }: { params: Promise<{ id:
                           <MapPin className="size-3" />
                           {r.ponto?.nome ?? <span className="text-amber-700">sem ponto definido</span>}
                         </p>
+                        <EmbarqueInfo e={um(r.embarque)} />
                       </div>
+                      {um(r.frequencia) && (
+                        <Selo cor={RESULTADOS[um(r.frequencia)!.resultado].cor}>{RESULTADOS[um(r.frequencia)!.resultado].rotulo}</Selo>
+                      )}
                       {onibus.length > 1 && v.status !== "cancelada" && (
                         <Formulario acao={moverReserva} className="flex-row items-center gap-1.5">
                           <input type="hidden" name="reserva_id" value={r.id} />
@@ -131,5 +157,16 @@ export default async function AlunosDaViagem({ params }: { params: Promise<{ id:
         </div>
       )}
     </>
+  );
+}
+
+function EmbarqueInfo({ e }: { e: Embarque | null }) {
+  if (!e) return null;
+  return (
+    <p className="mt-0.5 flex items-center gap-1 text-xs text-emerald-700">
+      {e.tipo === "qr" ? <QrCode className="size-3" /> : <Hand className="size-3" />}
+      {e.tipo === "qr" ? "Leu o QR" : `Manual: ${e.motivo_manual}`} às {HORA.format(new Date(e.registrado_em))}
+      {e.tipo === "qr" && !e.verificado_localizacao && <span className="text-slate-500">(sem conferir localização)</span>}
+    </p>
   );
 }

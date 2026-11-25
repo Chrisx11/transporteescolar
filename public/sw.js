@@ -1,7 +1,8 @@
 // Service worker básico do PWA.
 // Fase 1: cache dos arquivos estáticos e página "sem conexão".
-// Fase 3 amplia para a lista do motorista offline e a fila de presenças.
-const VERSAO = "v1";
+// Fase 3: as telas do motorista ficam guardadas para abrir sem sinal (a lista e a
+// fila de presenças ficam no armazenamento do celular, pela própria tela).
+const VERSAO = "v2";
 const CACHE = `transporte-italva-${VERSAO}`;
 const OFFLINE = "/offline";
 
@@ -29,7 +30,23 @@ self.addEventListener("fetch", (evento) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
-  // Navegação: sempre da rede (dados sempre atuais); sem rede, página offline.
+  // Telas do motorista: rede primeiro, guardando uma cópia; sem rede, abre a cópia.
+  if (req.mode === "navigate" && url.pathname.startsWith("/app/motorista")) {
+    evento.respondWith(
+      fetch(req)
+        .then((resp) => {
+          if (resp.ok) {
+            const copia = resp.clone();
+            caches.open(CACHE).then((c) => c.put(req, copia));
+          }
+          return resp;
+        })
+        .catch(() => caches.match(req).then((c) => c || caches.match(OFFLINE))),
+    );
+    return;
+  }
+
+  // Demais navegações: sempre da rede (dados sempre atuais); sem rede, página offline.
   if (req.mode === "navigate") {
     evento.respondWith(fetch(req).catch(() => caches.match(OFFLINE)));
     return;
