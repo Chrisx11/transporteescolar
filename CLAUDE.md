@@ -417,4 +417,4 @@ Construa uma fase por vez e só avance com a minha aprovação.
 1. **Mudanças na viagem modelo e na escala modelo valem também nos dias já gerados** (substitui o item 3 da seção 17). Só afetam viagens de hoje em diante com status `agendada` ou `prazo_fechado`; prazo empurrado para o futuro reabre a reserva; um dia que deixaria de existir é apagado, exceto se tiver reserva ativa. Feito por gatilhos no banco (`sincronizar_viagens_do_modelo`, `reaplicar_escala_modelo`).
 2. **CPF fictício em testes:** com `ACEITAR_CPF_DE_TESTE=sim`, o app aceita qualquer número de 11 dígitos; o banco confere só o formato. Remover a variável em produção.
 3. **Admin testa todas as áreas com o próprio login:** a página de login escolhida (ou a faixa "Ver como") define a área (cookie `modo_admin`); o Admin tem cadastro de aluno e de motorista para isso.
-4. **Exclusão de viagem modelo:** só reservas ativas impedem; viagens do dia sem reserva ativa são apagadas junto.
+4. **Exclusão de viagem modelo:** sempre permitida; apaga junto as viagens do dia, reservas (inclusive ativas), embarques e frequência daquela viagem.

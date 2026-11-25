@@ -54,23 +54,20 @@ export async function excluirViagemModelo(_: Estado, fd: FormData): Promise<Esta
     const supabase = await criarClienteServidor();
     const id = campoObrigatorio(fd, "id", "id");
 
-    // As viagens do dia são geradas automaticamente a partir do modelo e bloqueiam a exclusão.
-    // Só reservas ATIVAS impedem: as canceladas são apagadas junto com as viagens do dia.
+    // Fase de testes: exclui tudo o que veio do modelo — viagens do dia, reservas
+    // (ativas ou não), embarques e frequência. A grade dos alunos fica sem essa viagem.
     const { data: geradas, error: e1 } = await supabase.from("viagens_dia").select("id").eq("viagem_modelo_id", id);
     if (e1) throw e1;
     const ids = (geradas ?? []).map((v) => v.id);
+    let ativas = 0;
     if (ids.length > 0) {
-      const { count: ativas, error: e2 } = await supabase
+      const { count, error: e2 } = await supabase
         .from("reservas")
         .select("id", { count: "exact", head: true })
         .in("viagem_dia_id", ids)
         .eq("status", "ativa");
       if (e2) throw e2;
-      if (ativas) {
-        throw new ErroValidacao(
-          `Esta viagem tem ${ativas} reserva(s) ativa(s) de alunos. Cancele as reservas ou desative a viagem em vez de excluir.`,
-        );
-      }
+      ativas = count ?? 0;
       const { error: e3 } = await supabase.from("viagens_dia").delete().in("id", ids);
       if (e3) throw e3;
     }
@@ -79,6 +76,7 @@ export async function excluirViagemModelo(_: Estado, fd: FormData): Promise<Esta
     if (error) throw error;
     revalidatePath("/painel/viagens");
     revalidatePath("/painel/dia");
-    return { ok: "Viagem excluída." };
+    revalidatePath("/app");
+    return { ok: ativas ? `Viagem excluída, junto com ${ativas} reserva(s) ativa(s).` : "Viagem excluída." };
   });
 }

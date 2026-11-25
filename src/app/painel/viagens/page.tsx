@@ -97,7 +97,7 @@ export default async function PaginaViagens({ searchParams }: { searchParams: Pr
                               campos={{ id: v.id }}
                               rotulo="Excluir"
  icone={<Trash2 />}
-                              confirmar={`Excluir "${v.nome}"? Se já estiver em uso, prefira desativar.`}
+                              confirmar={`Excluir "${v.nome}"? As viagens geradas e as reservas dos alunos nela também serão apagadas.`}
                             />
                           </div>
                         </td>
