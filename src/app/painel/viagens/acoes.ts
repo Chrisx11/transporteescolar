@@ -51,22 +51,24 @@ export async function excluirViagemModelo(_: Estado, fd: FormData): Promise<Esta
     const id = campoObrigatorio(fd, "id", "id");
 
     // As viagens do dia são geradas automaticamente a partir do modelo e bloqueiam a exclusão.
-    // Apaga as que não têm nenhuma reserva; as que têm reserva são histórico e ficam.
+    // Só reservas ATIVAS impedem: as canceladas são apagadas junto com as viagens do dia.
     const { data: geradas, error: e1 } = await supabase.from("viagens_dia").select("id").eq("viagem_modelo_id", id);
     if (e1) throw e1;
     const ids = (geradas ?? []).map((v) => v.id);
     if (ids.length > 0) {
-      const { data: comReserva, error: e2 } = await supabase.from("reservas").select("viagem_dia_id").in("viagem_dia_id", ids);
+      const { count: ativas, error: e2 } = await supabase
+        .from("reservas")
+        .select("id", { count: "exact", head: true })
+        .in("viagem_dia_id", ids)
+        .eq("status", "ativa");
       if (e2) throw e2;
-      const usadas = new Set((comReserva ?? []).map((r) => r.viagem_dia_id));
-      const livres = ids.filter((v) => !usadas.has(v));
-      if (usadas.size > 0) {
-        throw new ErroValidacao("Esta viagem já tem reservas de alunos. Para manter o histórico, desative-a em vez de excluir.");
+      if (ativas) {
+        throw new ErroValidacao(
+          `Esta viagem tem ${ativas} reserva(s) ativa(s) de alunos. Cancele as reservas ou desative a viagem em vez de excluir.`,
+        );
       }
-      if (livres.length > 0) {
-        const { error: e3 } = await supabase.from("viagens_dia").delete().in("id", livres);
-        if (e3) throw e3;
-      }
+      const { error: e3 } = await supabase.from("viagens_dia").delete().in("id", ids);
+      if (e3) throw e3;
     }
 
     const { error } = await supabase.from("viagens_modelo").delete().eq("id", id);
