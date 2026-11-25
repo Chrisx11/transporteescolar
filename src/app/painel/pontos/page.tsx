@@ -3,9 +3,10 @@ import { MapPin, Pencil, Plus, Trash2 } from "lucide-react";
 import { exigirPerfil } from "@/lib/auth";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { AcaoRapida, BotaoEnviar, Formulario } from "@/components/formulario";
-import { BotaoLink, Campo, Cartao, Entrada, Selecao, Selo, Tabela, Titulo, Vazio, LinkAcao } from "@/components/ui";
-import { CIDADES, type Cidade } from "@/lib/rotulos";
+import { BotaoLink, Campo, Cartao, Entrada, Selo, Tabela, Titulo, Vazio, LinkAcao } from "@/components/ui";
+import type { Cidade } from "@/lib/rotulos";
 import { excluirPonto, salvarPonto } from "./acoes";
+import { TipoPonto } from "./tipo-ponto";
 
 export const metadata: Metadata = { title: "Pontos de embarque" };
 
@@ -20,11 +21,11 @@ type Ponto = {
   ativo: boolean;
 };
 
-const AJUDA_CIDADE: Record<Cidade, string> = {
-  italva: "Embarque das idas e desembarque das voltas.",
-  campos: "Desembarque das idas e embarque das voltas.",
-  itaperuna: "Desembarque das idas e embarque das voltas.",
-};
+const GRUPOS: { cidade: Cidade; titulo: string; ajuda: string }[] = [
+  { cidade: "italva", titulo: "Ida · Italva", ajuda: "Onde o aluno embarca na ida e desce na volta." },
+  { cidade: "campos", titulo: "Volta · Campos", ajuda: "Onde o aluno embarca na volta e desce na ida." },
+  { cidade: "itaperuna", titulo: "Volta · Itaperuna", ajuda: "Onde o aluno embarca na volta e desce na ida." },
+];
 
 export default async function PaginaPontos({ searchParams }: { searchParams: Promise<{ editar?: string }> }) {
   await exigirPerfil("semtransp");
@@ -41,14 +42,14 @@ export default async function PaginaPontos({ searchParams }: { searchParams: Pro
       </Titulo>
       <div className="grid items-start gap-6 lg:grid-cols-[1fr_340px]">
         <div className="flex flex-col gap-6">
-          {(Object.keys(CIDADES) as Cidade[]).map((cidade) => {
+          {GRUPOS.map(({ cidade, titulo, ajuda }) => {
             const daCidade = lista.filter((p) => p.cidade === cidade);
             return (
               <div key={cidade}>
-                <h2 className="mb-1 font-semibold">{CIDADES[cidade]}</h2>
-                <p className="mb-2 text-xs text-slate-500">{AJUDA_CIDADE[cidade]}</p>
+                <h2 className="mb-1 font-semibold">{titulo}</h2>
+                <p className="mb-2 text-xs text-slate-500">{ajuda}</p>
                 {daCidade.length === 0 ? (
-                  <Vazio icone={MapPin}>Nenhum ponto em {CIDADES[cidade]}.</Vazio>
+                  <Vazio icone={MapPin}>Nenhum ponto de {titulo.toLowerCase()}.</Vazio>
                 ) : (
                   <Tabela>
                     <thead>
@@ -120,20 +121,10 @@ export default async function PaginaPontos({ searchParams }: { searchParams: Pro
             <Campo rotulo="Nome">
               <Entrada name="nome" defaultValue={atual?.nome} required placeholder="Ex.: Praça da Matriz" />
             </Campo>
-            <div className="grid grid-cols-[1fr_90px] gap-3">
-              <Campo rotulo="Cidade">
-                <Selecao name="cidade" defaultValue={atual?.cidade ?? "italva"}>
-                  {Object.entries(CIDADES).map(([v, r]) => (
-                    <option key={v} value={v}>
-                      {r}
-                    </option>
-                  ))}
-                </Selecao>
-              </Campo>
-              <Campo rotulo="Ordem">
-                <Entrada name="ordem" type="number" min={0} defaultValue={atual?.ordem ?? 0} />
-              </Campo>
-            </div>
+            <TipoPonto cidade={atual?.cidade} />
+            <Campo rotulo="Ordem na rota" ajuda="Define a sequência da rota e a ordem da lista do motorista.">
+              <Entrada name="ordem" type="number" min={0} defaultValue={atual?.ordem ?? 0} className="w-28" />
+            </Campo>
             <Campo rotulo="Endereço">
               <Entrada name="endereco" defaultValue={atual?.endereco ?? ""} />
             </Campo>
