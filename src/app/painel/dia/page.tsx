@@ -465,32 +465,6 @@ export default async function PainelDoDia({ searchParams }: { searchParams: Prom
         </form>
       </div>
 
-      {viagens.length > 0 && (
-        <div className="mb-6 inline-flex rounded-2xl bg-slate-100 p-1.5" role="tablist" aria-label="Cidade">
-          {(["campos", "itaperuna"] as Cidade[]).map((c) => {
-            const daC = viagens.filter((v) => v.cidade === c);
-            const alertas = daC.reduce((s, v) => s + v.alertas.length, 0);
-            const ativa = c === cidade;
-            return (
-              <Link
-                key={c}
-                href={endereco(data, c)}
-                role="tab"
-                aria-selected={ativa}
-                className={cx(
-                  "flex min-w-40 items-center justify-center gap-2 rounded-xl px-6 py-2.5 text-base font-semibold transition-all",
-                  ativa ? "bg-azul-600 text-white shadow-md shadow-azul-600/30" : "text-slate-600 hover:text-slate-900",
-                )}
-              >
-                {CIDADES[c]}
-                <span className={cx("rounded-full px-2 py-0.5 text-xs", ativa ? "bg-white/20" : "bg-white text-slate-500")}>{daC.length}</span>
-                {alertas > 0 && <AlertTriangle className={cx("size-4", ativa ? "text-amber-200" : "text-amber-500")} />}
-              </Link>
-            );
-          })}
-        </div>
-      )}
-
       {viagens.length === 0 ? (
         <Vazio icone={Bus}>
           Nenhuma viagem gerada para {dataBR(data)}. Pode ser feriado, ou as viagens ainda não foram criadas — use “Gerar
@@ -509,6 +483,25 @@ export default async function PainelDoDia({ searchParams }: { searchParams: Prom
               detalhe={`${totalCapacidade} lugares escalados`}
             />
             <Estatistica rotulo="Alertas" valor={totalAlertas} icone={AlertTriangle} cor={totalAlertas ? "rosa" : "verde"} />
+          </div>
+
+          <div className="mb-8 flex justify-center">
+            <div className="inline-flex rounded-2xl bg-slate-100 p-1.5" role="tablist" aria-label="Cidade">
+              {(["campos", "itaperuna"] as Cidade[]).map((c) => (
+                <Link
+                  key={c}
+                  href={endereco(data, c)}
+                  role="tab"
+                  aria-selected={c === cidade}
+                  className={cx(
+                    "flex min-w-40 items-center justify-center rounded-xl px-8 py-2.5 text-base font-semibold transition-all",
+                    c === cidade ? "bg-azul-600 text-white shadow-md shadow-azul-600/30" : "text-slate-600 hover:text-slate-900",
+                  )}
+                >
+                  {CIDADES[c]}
+                </Link>
+              ))}
+            </div>
           </div>
 
           {daCidade.length === 0 ? (
