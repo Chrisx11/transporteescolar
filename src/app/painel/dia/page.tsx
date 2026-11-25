@@ -143,7 +143,7 @@ function CartaoViagemDia({ v, onibus, motoristas }: { v: ViagemDoDia; onibus: Op
           ) : (
             v.onibus.map((o) => (
               <span key={o.id} className="rounded bg-slate-900 px-1.5 py-0.5 text-[11px] font-bold text-white" title={o.motorista_nome ?? "sem motorista"}>
-                {o.prefixo}
+                {o.placa}
               </span>
             ))
           )}
@@ -202,8 +202,8 @@ function CartaoViagemDia({ v, onibus, motoristas }: { v: ViagemDoDia; onibus: Op
           {v.onibus.length === 0 && <li className="px-3 py-3 text-sm text-slate-400">Sem ônibus nesta viagem.</li>}
           {v.onibus.map((o) => (
             <li key={o.id} className="flex flex-wrap items-center gap-3 px-3 py-2.5">
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-xs font-black text-white">
-                {o.prefixo}
+              <span className="flex h-9 shrink-0 items-center justify-center rounded-lg bg-slate-900 px-2.5 text-xs font-black tracking-wide text-white">
+                {o.placa}
               </span>
               <div className="min-w-0 flex-1">
                 <p className="flex items-center gap-1.5 text-sm font-medium text-slate-800">
@@ -249,7 +249,7 @@ function CartaoViagemDia({ v, onibus, motoristas }: { v: ViagemDoDia; onibus: Op
                   campos={{ id: o.id }}
                   rotulo=""
                   icone={<Trash2 />}
-                  confirmar={`Tirar o ônibus ${o.prefixo} desta viagem? Os alunos dele ficarão sem ônibus até realocar.`}
+                  confirmar={`Tirar o ônibus ${o.placa} desta viagem? Os alunos dele ficarão sem ônibus até realocar.`}
                 />
               )}
             </li>
@@ -389,11 +389,11 @@ export default async function PainelDoDia({ searchParams }: { searchParams: Prom
   const supabase = await criarClienteServidor();
   const [viagens, { data: onibus }, { data: motoristas }] = await Promise.all([
     carregarDia(data),
-    supabase.from("onibus").select("id, prefixo, capacidade, situacao").eq("situacao", "ativo").order("prefixo"),
+    supabase.from("onibus").select("id, prefixo, placa, capacidade, situacao").eq("situacao", "ativo").order("placa"),
     supabase.from("motoristas").select("usuario_id, usuario:usuarios(nome, ativo)"),
   ]);
 
-  const opcoesOnibus: Opcao[] = (onibus ?? []).map((o) => ({ id: o.id, rotulo: `${o.prefixo} (${o.capacidade} lugares)` }));
+  const opcoesOnibus: Opcao[] = (onibus ?? []).map((o) => ({ id: o.id, rotulo: `${o.placa} (${o.capacidade} lugares)` }));
   const opcoesMotoristas: Opcao[] = ((motoristas ?? []) as unknown as { usuario_id: string; usuario: { nome: string; ativo: boolean } }[])
     .filter((m) => m.usuario.ativo)
     .map((m) => ({ id: m.usuario_id, rotulo: m.usuario.nome }))

@@ -7,6 +7,8 @@ export type OnibusDoDia = {
   id: string;
   onibus_id: string;
   prefixo: string;
+  /** Placa do veículo: é o que aparece na logística. */
+  placa: string;
   capacidade: number;
   situacao: string;
   motorista_id: string | null;
@@ -47,7 +49,7 @@ type LinhaOnibus = {
   extra: boolean;
   iniciada_em: string | null;
   encerrada_em: string | null;
-  onibus: { prefixo: string; capacidade: number; situacao: string } | null;
+  onibus: { prefixo: string; placa: string; capacidade: number; situacao: string } | null;
   motorista: { usuario: { nome: string } | null } | null;
 };
 
@@ -65,7 +67,7 @@ export async function carregarDia(data: string): Promise<ViagemDoDia[]> {
   const [{ data: escala }, { data: reservas }, { data: freq }] = await Promise.all([
     supabase
       .from("viagem_dia_onibus")
-      .select("id, viagem_dia_id, onibus_id, motorista_id, extra, iniciada_em, encerrada_em, onibus(prefixo, capacidade, situacao), motorista:motoristas(usuario:usuarios(nome))")
+      .select("id, viagem_dia_id, onibus_id, motorista_id, extra, iniciada_em, encerrada_em, onibus(prefixo, placa, capacidade, situacao), motorista:motoristas(usuario:usuarios(nome))")
       .in("viagem_dia_id", ids),
     supabase
       .from("reservas")
@@ -88,6 +90,7 @@ export async function carregarDia(data: string): Promise<ViagemDoDia[]> {
         id: l.id,
         onibus_id: l.onibus_id,
         prefixo: l.onibus?.prefixo ?? "?",
+        placa: l.onibus?.placa ?? l.onibus?.prefixo ?? "?",
         capacidade: l.onibus?.capacidade ?? 0,
         situacao: l.onibus?.situacao ?? "ativo",
         motorista_id: l.motorista_id,
@@ -111,8 +114,8 @@ export async function carregarDia(data: string): Promise<ViagemDoDia[]> {
         alertas.push({ tipo: "erro", texto: `Excesso: ${daViagem.length - capacidade} aluno(s) além da capacidade.` });
       }
       for (const o of onibus) {
-        if (!o.motorista_id) alertas.push({ tipo: "alerta", texto: `Ônibus ${o.prefixo} sem motorista.` });
-        if (o.situacao === "manutencao") alertas.push({ tipo: "erro", texto: `Ônibus ${o.prefixo} está em manutenção.` });
+        if (!o.motorista_id) alertas.push({ tipo: "alerta", texto: `Ônibus ${o.placa} sem motorista.` });
+        if (o.situacao === "manutencao") alertas.push({ tipo: "erro", texto: `Ônibus ${o.placa} está em manutenção.` });
       }
       if (semPonto > 0) alertas.push({ tipo: "alerta", texto: `${semPonto} aluno(s) sem ponto de embarque.` });
       if (v.status !== "agendada" && semOnibus > 0) {

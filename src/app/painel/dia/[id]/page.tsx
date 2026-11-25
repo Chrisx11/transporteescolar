@@ -26,7 +26,7 @@ type Reserva = {
   embarque: Embarque | Embarque[] | null;
   frequencia: { resultado: ResultadoFrequencia } | { resultado: ResultadoFrequencia }[] | null;
 };
-type OnibusDia = { id: string; prefixo: string; capacidade: number; motorista: string | null };
+type OnibusDia = { id: string; placa: string; capacidade: number; motorista: string | null };
 
 const um = <T,>(x: T | T[] | null): T | null => (Array.isArray(x) ? (x[0] ?? null) : x);
 const SEM_PONTO = "sem";
@@ -43,7 +43,7 @@ export default async function AlunosDaViagem({ params }: { params: Promise<{ id:
 
   const [{ data: v }, { data: escala }, { data: reservas }] = await Promise.all([
     supabase.from("viagens_dia").select("id, data, nome, cidade, sentido, saida_em, status").eq("id", id).maybeSingle(),
-    supabase.from("viagem_dia_onibus").select("id, onibus(prefixo, capacidade), motorista:motoristas(usuario:usuarios(nome))").eq("viagem_dia_id", id),
+    supabase.from("viagem_dia_onibus").select("id, onibus(prefixo, placa, capacidade), motorista:motoristas(usuario:usuarios(nome))").eq("viagem_dia_id", id),
     supabase
       .from("reservas")
       .select(
@@ -57,17 +57,17 @@ export default async function AlunosDaViagem({ params }: { params: Promise<{ id:
   const onibus: OnibusDia[] = (
     (escala ?? []) as unknown as {
       id: string;
-      onibus: { prefixo: string; capacidade: number } | null;
+      onibus: { prefixo: string; placa: string; capacidade: number } | null;
       motorista: { usuario: { nome: string } | null } | null;
     }[]
   )
     .map((e) => ({
       id: e.id,
-      prefixo: e.onibus?.prefixo ?? "?",
+      placa: e.onibus?.placa ?? e.onibus?.prefixo ?? "?",
       capacidade: e.onibus?.capacidade ?? 0,
       motorista: e.motorista?.usuario?.nome ?? null,
     }))
-    .sort((a, b) => a.prefixo.localeCompare(b.prefixo, "pt-BR", { numeric: true }));
+    .sort((a, b) => a.placa.localeCompare(b.placa, "pt-BR", { numeric: true }));
 
   const lista = ((reservas ?? []) as unknown as Reserva[]).sort(
     (a, b) =>
@@ -84,13 +84,13 @@ export default async function AlunosDaViagem({ params }: { params: Promise<{ id:
     chave,
     nome,
     total: itens.length,
-    porOnibus: onibus.map((o) => ({ prefixo: o.prefixo, n: itens.filter((r) => r.viagem_dia_onibus_id === o.id).length })).filter((x) => x.n > 0),
+    porOnibus: onibus.map((o) => ({ placa: o.placa, n: itens.filter((r) => r.viagem_dia_onibus_id === o.id).length })).filter((x) => x.n > 0),
     semOnibus: itens.filter((r) => !r.viagem_dia_onibus_id).length,
   }));
 
   const grupos = [
     ...onibus.map((o) => ({ ...o, itens: lista.filter((r) => r.viagem_dia_onibus_id === o.id) })),
-    { id: "", prefixo: "", capacidade: 0, motorista: null, itens: lista.filter((r) => !r.viagem_dia_onibus_id) },
+    { id: "", placa: "", capacidade: 0, motorista: null, itens: lista.filter((r) => !r.viagem_dia_onibus_id) },
   ].filter((g) => g.id || g.itens.length > 0);
 
   return (
@@ -161,8 +161,8 @@ export default async function AlunosDaViagem({ params }: { params: Promise<{ id:
                     <td className="px-4 py-2.5">
                       <span className="flex flex-wrap gap-1.5">
                         {p.porOnibus.map((x) => (
-                          <span key={x.prefixo} className="rounded bg-slate-900 px-1.5 py-0.5 text-xs font-bold text-white">
-                            {x.prefixo}
+                          <span key={x.placa} className="rounded bg-slate-900 px-1.5 py-0.5 text-xs font-bold text-white">
+                            {x.placa}
                             {p.porOnibus.length > 1 || p.semOnibus ? <span className="ml-1 font-normal opacity-80">×{x.n}</span> : null}
                           </span>
                         ))}
@@ -183,7 +183,7 @@ export default async function AlunosDaViagem({ params }: { params: Promise<{ id:
                 <header className="flex flex-wrap items-center gap-3 border-b border-slate-100 px-4 py-3">
                   {g.id ? (
                     <span className="flex items-center gap-1.5 rounded-lg bg-slate-900 px-2.5 py-1 text-sm font-black text-white">
-                      <Bus className="size-4" /> {g.prefixo}
+                      <Bus className="size-4" /> {g.placa}
                     </span>
                   ) : (
                     <span className="font-semibold text-amber-700">Sem ônibus definido</span>
@@ -292,7 +292,7 @@ function MoverPara({
         </option>
         {destinos.map((o) => (
           <option key={o.id} value={o.id}>
-            Ônibus {o.prefixo}
+            Ônibus {o.placa}
           </option>
         ))}
       </Selecao>
