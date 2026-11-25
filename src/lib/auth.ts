@@ -27,14 +27,14 @@ export const ehModoAdmin = (v: unknown): v is ModoAdmin => (MODOS_ADMIN as reado
 /** Usuário logado + registro em `usuarios`. Nulo se não houver sessão válida. */
 export const obterSessao = cache(async (): Promise<UsuarioSessao | null> => {
   const supabase = await criarClienteServidor();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+  // Confere o token localmente (chave pública ES256), sem ir ao Supabase Auth.
+  const { data: auth } = await supabase.auth.getClaims();
+  const id = auth?.claims?.sub;
+  if (!id) return null;
   const { data } = await supabase
     .from("usuarios")
     .select("id, cpf, nome, email, telefone, perfil, ativo, troca_senha_obrigatoria")
-    .eq("id", user.id)
+    .eq("id", id)
     .maybeSingle();
   if (!data || !data.ativo) return null;
   const sessao: UsuarioSessao = { ...(data as Omit<UsuarioSessao, "admin">), admin: data.perfil === "admin" };

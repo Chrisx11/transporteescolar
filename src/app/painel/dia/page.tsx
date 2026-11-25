@@ -7,6 +7,7 @@ import {
   ArrowUpRight,
   Ban,
   Bus,
+  ChevronRight,
   CalendarPlus,
   Clock3,
   Gauge,
@@ -98,31 +99,70 @@ function CartaoViagemDia({ v, onibus, motoristas }: { v: ViagemDoDia; onibus: Op
   const reservavel = v.sentido !== "deslocamento_vazio";
   const livres = onibus.filter((o) => !v.onibus.some((x) => x.onibus_id === o.id));
 
+  const erros = v.alertas.filter((a) => a.tipo === "erro").length;
+  const excesso = reservavel && v.capacidade > 0 && v.reservas > v.capacidade;
+
   return (
-    <article
+    <details
       className={cx(
-        "flex flex-col rounded-2xl border bg-white shadow-suave",
-        v.alertas.some((a) => a.tipo === "erro") ? "border-red-200" : "border-slate-200/80",
-        cancelada && "opacity-70",
+        "group border-b border-slate-100 last:border-b-0 open:bg-slate-50/70",
+        cancelada && "opacity-60",
       )}
     >
-      <header className="flex items-start gap-3 p-5 pb-4">
-        <span className={cx("flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-md", cor)}>
-          <Icone className="size-5" />
+      <summary className={cx(COLUNAS, "cursor-pointer list-none items-center px-4 py-3 text-sm hover:bg-slate-50 [&::-webkit-details-marker]:hidden")}>
+        <span className="flex items-center gap-2">
+          <ChevronRight className="size-4 shrink-0 text-slate-400 transition-transform group-open:rotate-90" />
+          <span className="text-base font-bold tabular-nums">{HORA.format(new Date(v.saida_em))}</span>
         </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xl font-bold tabular-nums tracking-tight">{HORA.format(new Date(v.saida_em))}</span>
-            <span className="truncate font-semibold text-slate-800">{v.nome}</span>
-          </div>
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-            <Selo cor={status.cor}>{status.rotulo}</Selo>
-            {reservavel && <Prazo v={v} />}
-          </div>
-        </div>
-      </header>
+        <span className="flex min-w-0 items-center gap-2">
+          <span className={cx("flex size-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-white", cor)}>
+            <Icone className="size-3.5" />
+          </span>
+          <span className="truncate font-medium text-slate-800">{v.nome}</span>
+        </span>
+        <span>
+          <Selo cor={status.cor}>{status.rotulo}</Selo>
+        </span>
+        <span className="truncate">{reservavel ? <Prazo v={v} /> : <span className="text-xs text-slate-400">—</span>}</span>
+        <span className={cx("tabular-nums", excesso ? "font-semibold text-red-600" : "text-slate-700")}>
+          {reservavel ? (
+            <>
+              {v.reservas}
+              <span className="text-slate-400">/{v.capacidade}</span>
+            </>
+          ) : (
+            "—"
+          )}
+        </span>
+        <span className="tabular-nums text-slate-700">
+          {reservavel && ["em_andamento", "encerrada", "com_ocorrencia"].includes(v.status) ? `${v.embarcados}/${v.reservas}` : "—"}
+        </span>
+        <span className="flex flex-wrap gap-1">
+          {v.onibus.length === 0 ? (
+            <span className="text-xs text-red-600">sem ônibus</span>
+          ) : (
+            v.onibus.map((o) => (
+              <span key={o.id} className="rounded bg-slate-900 px-1.5 py-0.5 text-[11px] font-bold text-white" title={o.motorista_nome ?? "sem motorista"}>
+                {o.prefixo}
+              </span>
+            ))
+          )}
+        </span>
+        <span className="text-right">
+          {v.alertas.length > 0 && (
+            <span
+              className={cx(
+                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold",
+                erros ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-800",
+              )}
+            >
+              <AlertTriangle className="size-3" /> {v.alertas.length}
+            </span>
+          )}
+        </span>
+      </summary>
 
-      <div className="flex flex-1 flex-col gap-4 px-5 pb-5">
+      <div className="flex flex-col gap-4 px-4 pb-5 pl-11 pt-1 lg:max-w-3xl">
         {cancelada && v.ocorrencia_descricao && <Aviso tipo="erro">Cancelada: {v.ocorrencia_descricao}</Aviso>}
         {v.status === "com_ocorrencia" && v.ocorrencia_descricao && (
           <Aviso tipo="erro">Ocorrência: {v.ocorrencia_descricao} (faltas anuladas)</Aviso>
@@ -251,7 +291,7 @@ function CartaoViagemDia({ v, onibus, motoristas }: { v: ViagemDoDia; onibus: Op
         )}
       </div>
 
-      <footer className="flex flex-wrap items-center gap-2 border-t border-slate-100 px-5 py-3">
+      <footer className="flex flex-wrap items-center gap-2 border-t border-slate-200/70 px-4 py-3 pl-11 lg:max-w-3xl">
         {reservavel && (
           <LinkAcao href={`/painel/dia/${v.id}`} icone={ListChecks}>
             Ver alunos
@@ -310,7 +350,32 @@ function CartaoViagemDia({ v, onibus, motoristas }: { v: ViagemDoDia; onibus: Op
           </details>
         )}
       </footer>
-    </article>
+    </details>
+  );
+}
+
+/** Colunas da tabela de viagens (cabeçalho e linhas usam a mesma grade). */
+const COLUNAS = "grid grid-cols-[88px_minmax(180px,2fr)_130px_minmax(150px,1.3fr)_90px_90px_minmax(90px,1fr)_56px] gap-3";
+
+function TabelaViagens({ viagens, onibus, motoristas }: { viagens: ViagemDoDia[]; onibus: Opcao[]; motoristas: Opcao[] }) {
+  return (
+    <div className="overflow-x-auto rounded-2xl border border-slate-200/80 bg-white shadow-suave">
+      <div className="min-w-[980px]">
+        <div className={cx(COLUNAS, "border-b border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-slate-500")}>
+          <span className="pl-6">Saída</span>
+          <span>Viagem</span>
+          <span>Situação</span>
+          <span>Prazo</span>
+          <span>Reservas</span>
+          <span>Embarcados</span>
+          <span>Ônibus</span>
+          <span className="text-right">Alertas</span>
+        </div>
+        {viagens.map((v) => (
+          <CartaoViagemDia key={v.id} v={v} onibus={onibus} motoristas={motoristas} />
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -407,12 +472,10 @@ export default async function PainelDoDia({ searchParams }: { searchParams: Prom
             if (daCidade.length === 0) return null;
             return (
               <section key={cidade} className="mb-10">
-                <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-500">{CIDADES[cidade]}</h2>
-                <div className="grid items-start gap-4 lg:grid-cols-2 2xl:grid-cols-3">
-                  {daCidade.map((v) => (
-                    <CartaoViagemDia key={v.id} v={v} onibus={opcoesOnibus} motoristas={opcoesMotoristas} />
-                  ))}
-                </div>
+                <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-500">
+                  {CIDADES[cidade]} <span className="font-normal normal-case text-slate-400">· clique numa viagem para ver detalhes e ações</span>
+                </h2>
+                <TabelaViagens viagens={daCidade} onibus={opcoesOnibus} motoristas={opcoesMotoristas} />
               </section>
             );
           })}

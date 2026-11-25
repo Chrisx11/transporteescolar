@@ -45,34 +45,85 @@ export async function criarAluno(_: Estado, fd: FormData): Promise<Estado> {
   });
 }
 
-export async function salvarDadosAluno(_: Estado, fd: FormData): Promise<Estado> {
+/**
+ * Formulário único da tela do aluno: dados, situação, matrícula, pontos e grade.
+ * A instituição de cada dia da grade vem dos vínculos (a da cidade da viagem),
+ * para valerem os dias sem aula do calendário dela.
+ */
+export async function salvarAluno(_: Estado, fd: FormData): Promise<Estado> {
   return executar(async () => {
     await sessaoComPerfil("semeduc");
     const id = campoObrigatorio(fd, "id", "id");
-    await atualizarUsuario(id, contato(fd));
     const supabase = await criarClienteServidor();
-    const { error } = await supabase.from("alunos").update(dadosPessoais(fd)).eq("usuario_id", id);
-    if (error) throw error;
-    revalidatePath(caminho(id));
-    return { ok: "Dados atualizados." };
-  });
-}
-
-export async function alterarSituacao(_: Estado, fd: FormData): Promise<Estado> {
-  return executar(async () => {
-    await sessaoComPerfil("semeduc");
-    const id = campoObrigatorio(fd, "id", "id");
     const situacao = campoObrigatorio(fd, "situacao", "Situação");
-    const motivo = campo(fd, "motivo_devolucao");
-    const supabase = await criarClienteServidor();
-    const { error } = await supabase
+    const validade = campo(fd, "matricula_validade");
+
+    await atualizarUsuario(id, contato(fd));
+    const { error: e1 } = await supabase
       .from("alunos")
-      .update({ situacao, motivo_devolucao: situacao === "ativo" ? null : motivo })
+      .update({
+        ...dadosPessoais(fd),
+        situacao,
+        motivo_devolucao: situacao === "ativo" ? null : campo(fd, "motivo_devolucao"),
+        matricula_validade: validade,
+        ponto_ida_padrao_id: campo(fd, "ponto_ida_padrao_id"),
+      })
       .eq("usuario_id", id);
-    if (error) throw error;
+    if (e1) throw e1;
+
+    // Ponto da volta: um por cidade; o escolhido define a cidade dele.
+    const pontoVolta = campo(fd, "ponto_volta_id");
+    if (pontoVolta) {
+      const { data: p, error } = await supabase.from("pontos").select("cidade").eq("id", pontoVolta).single();
+      if (error) throw error;
+      const r = await supabase
+        .from("aluno_pontos_volta")
+        .upsert({ aluno_id: id, cidade: p.cidade, ponto_id: pontoVolta }, { onConflict: "aluno_id,cidade" });
+      if (r.error) throw r.error;
+    }
+
+    // Grade: só a ida e a volta de cada dia (pontos do dia ficam como estavam).
+    const [{ data: viagens }, { data: vinculos }] = await Promise.all([
+      supabase.from("viagens_modelo").select("id, cidade"),
+      supabase.from("aluno_vinculos").select("instituicao:instituicoes(id, cidade)").eq("aluno_id", id),
+    ]);
+    const cidadeDe = (v: string | null) => (viagens ?? []).find((x) => x.id === v)?.cidade;
+    const instituicaoEm = (cidade?: string) =>
+      ((vinculos ?? []) as unknown as { instituicao: { id: string; cidade: string } | null }[]).find(
+        (x) => x.instituicao?.cidade === cidade,
+      )?.instituicao?.id ?? null;
+
+    const salvar = [];
+    const apagar: number[] = [];
+    for (let dia = 1; dia <= 7; dia++) {
+      if (!fd.has(`ida_${dia}`)) continue;
+      const ida = campo(fd, `ida_${dia}`);
+      const volta = campo(fd, `volta_${dia}`);
+      if (ida || volta) {
+        salvar.push({
+          aluno_id: id,
+          dia_semana: dia,
+          viagem_ida_modelo_id: ida,
+          viagem_volta_modelo_id: volta,
+          instituicao_id: instituicaoEm(cidadeDe(ida) ?? cidadeDe(volta)),
+        });
+      } else apagar.push(dia);
+    }
+    if (salvar.length) {
+      const { error } = await supabase.from("grade_semanal").upsert(salvar, { onConflict: "aluno_id,dia_semana" });
+      if (error) throw error;
+    }
+    if (apagar.length) {
+      const { error } = await supabase.from("grade_semanal").delete().eq("aluno_id", id).in("dia_semana", apagar);
+      if (error) throw error;
+    }
+
     revalidatePath(caminho(id));
     revalidatePath("/painel/alunos");
-    return { ok: "Situação atualizada." };
+    if (situacao === "ativo" && !validade) {
+      return { ok: "Aluno salvo. Atenção: sem a data de validade da matrícula, ele ainda não consegue reservar." };
+    }
+    return { ok: "Aluno salvo." };
   });
 }
 
@@ -92,7 +143,10 @@ export async function salvarDocumentos(_: Estado, fd: FormData): Promise<Estado>
       .single();
     if (e0) throw e0;
 
-    const mudancas: Record<string, string | null> = { matricula_validade: campo(fd, "matricula_validade") };
+    // A validade da matrícula agora fica no formulário principal; só muda aqui se vier no envio.
+    const mudancas: Record<string, string | null> = fd.has("matricula_validade")
+      ? { matricula_validade: campo(fd, "matricula_validade") }
+      : {};
     const remover: { bucket: string; path: string }[] = [];
     const doAluno = (p: string) => {
       if (!p.startsWith(`${id}/`) || p.includes("..")) throw new ErroValidacao("Arquivo inválido.");
@@ -145,68 +199,6 @@ export async function removerVinculo(_: Estado, fd: FormData): Promise<Estado> {
     const { error } = await supabase.from("aluno_vinculos").delete().eq("id", campoObrigatorio(fd, "id", "id"));
     if (error) throw error;
     revalidatePath("/painel/alunos", "layout");
-  });
-}
-
-export async function salvarPontosPadrao(_: Estado, fd: FormData): Promise<Estado> {
-  return executar(async () => {
-    await sessaoComPerfil("semeduc");
-    const id = campoObrigatorio(fd, "id", "id");
-    const supabase = await criarClienteServidor();
-    const { error } = await supabase
-      .from("alunos")
-      .update({ ponto_ida_padrao_id: campo(fd, "ponto_ida_padrao_id") })
-      .eq("usuario_id", id);
-    if (error) throw error;
-
-    for (const cidade of ["campos", "itaperuna"]) {
-      const ponto = campo(fd, `volta_${cidade}`);
-      const r = ponto
-        ? await supabase
-            .from("aluno_pontos_volta")
-            .upsert({ aluno_id: id, cidade, ponto_id: ponto }, { onConflict: "aluno_id,cidade" })
-        : await supabase.from("aluno_pontos_volta").delete().eq("aluno_id", id).eq("cidade", cidade);
-      if (r.error) throw r.error;
-    }
-    revalidatePath(caminho(id));
-    return { ok: "Pontos padrão salvos." };
-  });
-}
-
-/** Salva a grade semanal inteira (um registro por dia com ida e/ou volta). */
-export async function salvarGrade(_: Estado, fd: FormData): Promise<Estado> {
-  return executar(async () => {
-    await sessaoComPerfil("semeduc");
-    const id = campoObrigatorio(fd, "id", "id");
-    const supabase = await criarClienteServidor();
-
-    const salvar = [];
-    const apagar: number[] = [];
-    for (let dia = 1; dia <= 7; dia++) {
-      if (!fd.has(`ida_${dia}`)) continue; // dia não exibido no formulário
-      const linha = {
-        aluno_id: id,
-        dia_semana: dia,
-        viagem_ida_modelo_id: campo(fd, `ida_${dia}`),
-        viagem_volta_modelo_id: campo(fd, `volta_${dia}`),
-        ponto_ida_id: campo(fd, `ponto_ida_${dia}`),
-        ponto_volta_id: campo(fd, `ponto_volta_${dia}`),
-        instituicao_id: campo(fd, `inst_${dia}`),
-      };
-      if (linha.viagem_ida_modelo_id || linha.viagem_volta_modelo_id) salvar.push(linha);
-      else apagar.push(dia);
-    }
-
-    if (salvar.length) {
-      const { error } = await supabase.from("grade_semanal").upsert(salvar, { onConflict: "aluno_id,dia_semana" });
-      if (error) throw error;
-    }
-    if (apagar.length) {
-      const { error } = await supabase.from("grade_semanal").delete().eq("aluno_id", id).in("dia_semana", apagar);
-      if (error) throw error;
-    }
-    revalidatePath(caminho(id));
-    return { ok: "Grade semanal salva." };
   });
 }
 

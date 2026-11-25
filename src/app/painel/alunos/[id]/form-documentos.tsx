@@ -9,7 +9,7 @@ const TIPOS_FOTO: Record<string, string> = { "image/jpeg": "jpg", "image/png": "
 const TIPOS_DOC: Record<string, string> = { ...TIPOS_FOTO, "application/pdf": "pdf" };
 
 /** Envia os arquivos direto ao Storage (bucket privado) e depois registra no cadastro. */
-export function FormDocumentos({ alunoId, validade }: { alunoId: string; validade: string | null }) {
+export function FormDocumentos({ alunoId }: { alunoId: string }) {
   const [estado, despachar] = useActionState(salvarDocumentos, null);
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, iniciar] = useTransition();
@@ -35,7 +35,6 @@ export function FormDocumentos({ alunoId, validade }: { alunoId: string; validad
       try {
         const fd = new FormData();
         fd.set("id", alunoId);
-        fd.set("matricula_validade", String(dados.get("matricula_validade") ?? ""));
         const foto = dados.get("foto");
         if (foto instanceof File && foto.size > 0) fd.set("foto_path", await enviar("fotos", "foto", foto, TIPOS_FOTO, 5));
         const comp = dados.get("comprovante");
@@ -58,14 +57,11 @@ export function FormDocumentos({ alunoId, validade }: { alunoId: string; validad
       <Campo rotulo="Novo comprovante (PDF ou imagem, até 10 MB)">
         <Entrada name="comprovante" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" />
       </Campo>
-      <Campo rotulo="Matrícula válida até">
-        <Entrada name="matricula_validade" type="date" defaultValue={validade ?? ""} />
-      </Campo>
       {(erro || estado?.erro) && <Aviso tipo="erro">{erro ?? estado?.erro}</Aviso>}
       {estado?.ok && !erro && <Aviso tipo="ok">{estado.ok}</Aviso>}
       <div>
         <Botao type="submit" disabled={enviando}>
-          {enviando ? "Enviando…" : "Salvar documentos"}
+          {enviando ? "Enviando…" : "Enviar arquivos"}
         </Botao>
       </div>
     </form>

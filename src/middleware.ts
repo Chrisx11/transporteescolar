@@ -22,10 +22,10 @@ export async function middleware(request: NextRequest) {
     },
   );
 
-  // Renova a sessão (não remover).
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Renova a sessão (não remover). getClaims confere a assinatura do token com a
+  // chave pública do projeto (ES256) sem ir ao servidor do Supabase a cada página.
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims?.sub ? data.claims : null;
 
   const caminho = request.nextUrl.pathname;
   const publica = ROTAS_PUBLICAS.some((r) => caminho === r || caminho.startsWith(r + "/"));
