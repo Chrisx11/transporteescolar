@@ -379,10 +379,11 @@ function TabelaViagens({ viagens, onibus, motoristas }: { viagens: ViagemDoDia[]
   );
 }
 
-export default async function PainelDoDia({ searchParams }: { searchParams: Promise<{ data?: string }> }) {
+export default async function PainelDoDia({ searchParams }: { searchParams: Promise<{ data?: string; cidade?: string }> }) {
   await exigirPerfil("semtransp");
   const hoje = hojeSP();
-  const pedida = (await searchParams).data;
+  const params = await searchParams;
+  const pedida = params.data;
   const data = pedida && /^\d{4}-\d{2}-\d{2}$/.test(pedida) ? pedida : hoje;
 
   const supabase = await criarClienteServidor();
@@ -398,10 +399,26 @@ export default async function PainelDoDia({ searchParams }: { searchParams: Prom
     .map((m) => ({ id: m.usuario_id, rotulo: m.usuario.nome }))
     .sort((a, b) => a.rotulo.localeCompare(b.rotulo, "pt-BR"));
 
-  const reservaveis = viagens.filter((v) => v.sentido !== "deslocamento_vazio" && v.status !== "cancelada");
+  // Cidade escolhida no seletor (padrão: Campos; se Campos não tiver viagem no dia, Itaperuna).
+  const cidade: Cidade =
+    params.cidade === "itaperuna" || params.cidade === "campos"
+      ? params.cidade
+      : viagens.some((v) => v.cidade === "campos") || !viagens.some((v) => v.cidade === "itaperuna")
+        ? "campos"
+        : "itaperuna";
+  const daCidade = viagens.filter((v) => v.cidade === cidade);
+  const endereco = (d: string, c: Cidade) => {
+    const q = new URLSearchParams();
+    if (d !== hoje) q.set("data", d);
+    if (c !== "campos") q.set("cidade", c);
+    const t = q.toString();
+    return t ? `/painel/dia?${t}` : "/painel/dia";
+  };
+
+  const reservaveis = daCidade.filter((v) => v.sentido !== "deslocamento_vazio" && v.status !== "cancelada");
   const totalReservas = reservaveis.reduce((s, v) => s + v.reservas, 0);
   const totalCapacidade = reservaveis.reduce((s, v) => s + v.capacidade, 0);
-  const totalAlertas = viagens.reduce((s, v) => s + v.alertas.length, 0);
+  const totalAlertas = daCidade.reduce((s, v) => s + v.alertas.length, 0);
   const dias = [
     { rotulo: "Hoje", data: hoje },
     { rotulo: "Amanhã", data: somarDias(hoje, 1) },
@@ -429,7 +446,7 @@ export default async function PainelDoDia({ searchParams }: { searchParams: Prom
           {dias.map((d) => (
             <Link
               key={d.data}
-              href={d.data === hoje ? "/painel/dia" : `/painel/dia?data=${d.data}`}
+              href={endereco(d.data, cidade)}
               className={cx(
                 "rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors",
                 d.data === data ? "bg-white text-azul-800 shadow-sm" : "text-slate-600 hover:text-slate-900",
@@ -441,11 +458,38 @@ export default async function PainelDoDia({ searchParams }: { searchParams: Prom
         </div>
         <form action="/painel/dia" className="flex items-center gap-2">
           <Entrada type="date" name="data" defaultValue={data} className="h-9 w-40" aria-label="Escolher data" />
+          {cidade !== "campos" && <input type="hidden" name="cidade" value={cidade} />}
           <button className="flex h-9 items-center gap-1.5 rounded-xl px-3 text-sm font-medium text-slate-600 ring-1 ring-inset ring-slate-200 hover:bg-white">
             <RefreshCw className="size-3.5" /> Ver
           </button>
         </form>
       </div>
+
+      {viagens.length > 0 && (
+        <div className="mb-6 inline-flex rounded-2xl bg-slate-100 p-1.5" role="tablist" aria-label="Cidade">
+          {(["campos", "itaperuna"] as Cidade[]).map((c) => {
+            const daC = viagens.filter((v) => v.cidade === c);
+            const alertas = daC.reduce((s, v) => s + v.alertas.length, 0);
+            const ativa = c === cidade;
+            return (
+              <Link
+                key={c}
+                href={endereco(data, c)}
+                role="tab"
+                aria-selected={ativa}
+                className={cx(
+                  "flex min-w-40 items-center justify-center gap-2 rounded-xl px-6 py-2.5 text-base font-semibold transition-all",
+                  ativa ? "bg-azul-600 text-white shadow-md shadow-azul-600/30" : "text-slate-600 hover:text-slate-900",
+                )}
+              >
+                {CIDADES[c]}
+                <span className={cx("rounded-full px-2 py-0.5 text-xs", ativa ? "bg-white/20" : "bg-white text-slate-500")}>{daC.length}</span>
+                {alertas > 0 && <AlertTriangle className={cx("size-4", ativa ? "text-amber-200" : "text-amber-500")} />}
+              </Link>
+            );
+          })}
+        </div>
+      )}
 
       {viagens.length === 0 ? (
         <Vazio icone={Bus}>
@@ -455,7 +499,7 @@ export default async function PainelDoDia({ searchParams }: { searchParams: Prom
       ) : (
         <>
           <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <Estatistica rotulo="Viagens" valor={viagens.length} icone={Bus} cor="azul" />
+            <Estatistica rotulo="Viagens" valor={daCidade.length} icone={Bus} cor="azul" />
             <Estatistica rotulo="Reservas" valor={totalReservas} icone={Users} cor="verde" />
             <Estatistica
               rotulo="Ocupação"
@@ -467,18 +511,14 @@ export default async function PainelDoDia({ searchParams }: { searchParams: Prom
             <Estatistica rotulo="Alertas" valor={totalAlertas} icone={AlertTriangle} cor={totalAlertas ? "rosa" : "verde"} />
           </div>
 
-          {(["campos", "itaperuna"] as Cidade[]).map((cidade) => {
-            const daCidade = viagens.filter((v) => v.cidade === cidade);
-            if (daCidade.length === 0) return null;
-            return (
-              <section key={cidade} className="mb-10">
-                <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-500">
-                  {CIDADES[cidade]} <span className="font-normal normal-case text-slate-400">· clique numa viagem para ver detalhes e ações</span>
-                </h2>
-                <TabelaViagens viagens={daCidade} onibus={opcoesOnibus} motoristas={opcoesMotoristas} />
-              </section>
-            );
-          })}
+          {daCidade.length === 0 ? (
+            <Vazio icone={Bus}>Nenhuma viagem de {CIDADES[cidade]} em {dataBR(data)}.</Vazio>
+          ) : (
+            <section className="mb-10">
+              <p className="mb-3 text-sm text-slate-500">Clique numa viagem para ver detalhes e ações.</p>
+              <TabelaViagens viagens={daCidade} onibus={opcoesOnibus} motoristas={opcoesMotoristas} />
+            </section>
+          )}
         </>
       )}
     </>
