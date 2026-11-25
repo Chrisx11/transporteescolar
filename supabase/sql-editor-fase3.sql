@@ -1,7 +1,7 @@
 -- =====================================================================
--- Fase 3 — Embarque. Cole no SQL Editor do Supabase e rode UMA vez.
--- Antes: as fases 1 e 2 e os arquivos sql-editor-cpf-teste.sql e
--- sql-editor-admin-testa-aluno.sql já precisam ter sido rodados.
+-- Fase 3 — Embarque. Cole no SQL Editor do Supabase e rode.
+-- Pode rodar mais de uma vez: o que já existe é mantido e o que falta é criado.
+-- Antes: fases 1 e 2, sql-editor-cpf-teste.sql e sql-editor-admin-testa-aluno.sql.
 -- Com a extensão pg_cron ativa, a rotina de encerrar viagens esquecidas
 -- (a cada 30 min) fica agendada sozinha.
 -- =====================================================================
@@ -13,20 +13,21 @@
 -- Todo horário é calculado em America/Sao_Paulo (função agora()).
 -- =====================================================================
 
-create type public.tipo_embarque as enum ('qr', 'manual');
-create type public.resultado_frequencia as enum ('presente', 'falta', 'nao_retornou', 'anulada');
+do $$ begin create type public.tipo_embarque as enum ('qr', 'manual'); exception when duplicate_object then null; end $$;
+do $$ begin create type public.resultado_frequencia as enum ('presente', 'falta', 'nao_retornou', 'anulada'); exception when duplicate_object then null; end $$;
 
 -- Cada ônibus inicia e encerra o próprio trecho.
+alter table public.viagem_dia_onibus drop constraint if exists viagem_dia_onibus_encerrar_depois;
 alter table public.viagem_dia_onibus
-  add column iniciada_em timestamptz,
-  add column encerrada_em timestamptz,
+  add column if not exists iniciada_em timestamptz,
+  add column if not exists encerrada_em timestamptz,
   add constraint viagem_dia_onibus_encerrar_depois check (encerrada_em is null or iniciada_em is not null);
 
 -- ---------------------------------------------------------------------
 -- Embarques: um por reserva. A localização do aluno não é guardada,
 -- só a distância calculada e se ela foi conferida (LGPD, seção 13).
 -- ---------------------------------------------------------------------
-create table public.embarques (
+create table if not exists public.embarques (
   id uuid primary key default gen_random_uuid(),
   reserva_id uuid not null unique references public.reservas (id) on delete cascade,
   viagem_dia_onibus_id uuid references public.viagem_dia_onibus (id) on delete set null,
@@ -42,10 +43,10 @@ create table public.embarques (
 );
 comment on column public.embarques.onibus_anterior_id is 'Preenchido quando o aluno leu o QR de outro ônibus da mesma viagem.';
 comment on column public.embarques.id_offline is 'Identificador gerado no celular do motorista: evita duplicar a presença feita sem internet.';
-create index embarques_onibus_idx on public.embarques (viagem_dia_onibus_id);
+create index if not exists embarques_onibus_idx on public.embarques (viagem_dia_onibus_id);
 
 -- Resultado de cada reserva quando a viagem termina (RN14).
-create table public.frequencia (
+create table if not exists public.frequencia (
   id bigint generated always as identity primary key,
   reserva_id uuid not null unique references public.reservas (id) on delete cascade,
   aluno_id uuid not null references public.alunos (usuario_id) on delete cascade,
@@ -54,11 +55,11 @@ create table public.frequencia (
   lancada_em timestamptz not null default now(),
   atualizada_em timestamptz
 );
-create index frequencia_aluno_idx on public.frequencia (aluno_id, lancada_em desc);
-create index frequencia_viagem_idx on public.frequencia (viagem_dia_id, resultado);
+create index if not exists frequencia_aluno_idx on public.frequencia (aluno_id, lancada_em desc);
+create index if not exists frequencia_viagem_idx on public.frequencia (viagem_dia_id, resultado);
 
 -- Só a última posição do motorista em cada trecho (sem histórico do trajeto).
-create table public.localizacao_motorista (
+create table if not exists public.localizacao_motorista (
   viagem_dia_onibus_id uuid primary key references public.viagem_dia_onibus (id) on delete cascade,
   lat double precision not null check (lat between -90 and 90),
   lng double precision not null check (lng between -180 and 180),
@@ -566,7 +567,7 @@ $$;
 -- ---------------------------------------------------------------------
 -- minhas_viagens: agora também traz o embarque, a janela do QR e o resultado.
 -- ---------------------------------------------------------------------
-drop function public.minhas_viagens(date);
+drop function if exists public.minhas_viagens(date);
 create function public.minhas_viagens(p_data date)
 returns table (
   sentido public.sentido,
@@ -701,6 +702,7 @@ as $$
   select exists (select 1 from public.reservas where id = p_reserva and aluno_id = auth.uid());
 $$;
 
+drop policy if exists embarques_ler on public.embarques;
 create policy embarques_ler on public.embarques for select
   using (
     public.eh_minha_reserva(reserva_id)
@@ -708,22 +710,27 @@ create policy embarques_ler on public.embarques for select
     or public.eh_perfil('semtransp', 'semeduc', 'admin')
   );
 
+drop policy if exists frequencia_ler on public.frequencia;
 create policy frequencia_ler on public.frequencia for select
   using (aluno_id = auth.uid() or public.eh_perfil('semtransp', 'semeduc', 'admin'));
 
+drop policy if exists localizacao_ler on public.localizacao_motorista;
 create policy localizacao_ler on public.localizacao_motorista for select
   using (public.eh_motorista_do_onibus_dia(viagem_dia_onibus_id) or public.eh_perfil('semtransp', 'admin'));
 
 -- Auditoria (seção 2): embarques e frequência. A localização não entra (muda a cada poucos segundos).
+drop trigger if exists embarques_auditoria on public.embarques;
 create trigger embarques_auditoria after insert or update or delete on public.embarques
   for each row execute function public.registrar_auditoria();
+drop trigger if exists frequencia_auditoria on public.frequencia;
 create trigger frequencia_auditoria after insert or update or delete on public.frequencia
   for each row execute function public.registrar_auditoria();
 
 -- Tempo real no painel do dia.
 do $$
 begin
-  if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime')
+     and not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'embarques') then
     alter publication supabase_realtime add table public.embarques;
   end if;
 end;
@@ -737,3 +744,6 @@ begin
   end if;
 end;
 $$;
+
+-- Faz a API do Supabase enxergar as funções novas na hora.
+notify pgrst, 'reload schema';
