@@ -140,6 +140,7 @@ export function CartaoViagem({ v, pontos }: { v: MinhaViagem; pontos: PontoOpcao
             pontos={pontos}
             cidadeEmbarque={cidadeEmbarque}
             cidadeDesembarque={cidadeDesembarque}
+            linha={v.cidade as "campos" | "itaperuna"}
             inicial={lembrados(v.sentido, v.cidade, v.ponto_embarque_id, v.ponto_desembarque_id)}
             rotulo={reservado ? "Salvar pontos" : "Confirmar reserva"}
             pendente={pendente}
@@ -273,6 +274,7 @@ function EscolherPontos({
   pontos,
   cidadeEmbarque,
   cidadeDesembarque,
+  linha,
   inicial,
   rotulo,
   pendente,
@@ -282,14 +284,17 @@ function EscolherPontos({
   pontos: PontoOpcao[];
   cidadeEmbarque: PontoOpcao["cidade"];
   cidadeDesembarque: PontoOpcao["cidade"];
+  linha: "campos" | "itaperuna";
   inicial: { embarque: string; desembarque: string };
   rotulo: string;
   pendente: boolean;
   aoConfirmar: (embarque: string | null, desembarque: string | null) => void;
   aoCancelar: () => void;
 }) {
-  const deEmbarque = pontos.filter((p) => p.cidade === cidadeEmbarque);
-  const deDesembarque = pontos.filter((p) => p.cidade === cidadeDesembarque);
+  // Só os pontos da linha da viagem (os sem linha definida servem às duas).
+  const daLinha = (p: PontoOpcao) => !p.linha || p.linha === linha;
+  const deEmbarque = pontos.filter((p) => p.cidade === cidadeEmbarque && daLinha(p));
+  const deDesembarque = pontos.filter((p) => p.cidade === cidadeDesembarque && daLinha(p));
   const valido = (id: string, lista: PontoOpcao[]) => (lista.some((p) => p.id === id) ? id : "");
   const [embarque, setEmbarque] = useState(valido(inicial.embarque, deEmbarque));
   const [desembarque, setDesembarque] = useState(valido(inicial.desembarque, deDesembarque));

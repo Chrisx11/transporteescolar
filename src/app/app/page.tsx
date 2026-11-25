@@ -24,7 +24,7 @@ export default async function HojeAluno({ searchParams }: { searchParams: Promis
     supabase.from("alunos").select("situacao, matricula_validade").eq("usuario_id", sessao.id).maybeSingle(),
     supabase.rpc("minhas_viagens", { p_data: hoje }),
     supabase.rpc("minhas_viagens", { p_data: amanha }),
-    supabase.from("pontos").select("id, nome, cidade, ordem").eq("ativo", true).order("ordem").order("nome"),
+    supabase.from("pontos").select("id, nome, cidade, ordem, linha").eq("ativo", true).order("ordem").order("nome"),
   ]);
 
   const listaAmanha = (deAmanha ?? []) as MinhaViagem[];

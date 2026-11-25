@@ -19,7 +19,8 @@ export async function salvarPonto(_: Estado, fd: FormData): Promise<Estado> {
     const id = campo(fd, "id");
     const dados = {
       nome: campoObrigatorio(fd, "nome", "Nome"),
-      cidade: campoObrigatorio(fd, "cidade", "Ida ou volta (e a cidade da volta)"),
+      cidade: campoObrigatorio(fd, "cidade", "Ida ou volta"),
+      linha: campoObrigatorio(fd, "linha", "Linha (Campos ou Itaperuna)"),
       endereco: campo(fd, "endereco"),
       lat: numeroOuNulo(campo(fd, "lat"), "Latitude"),
       lng: numeroOuNulo(campo(fd, "lng"), "Longitude"),

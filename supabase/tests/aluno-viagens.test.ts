@@ -99,6 +99,18 @@ describe("rotas liberadas", () => {
     expect(r[0]).toEqual({ ponto_nome: "Portão UENF", ponto_desembarque_nome: "Rodoviária" });
   });
 
+  it("ponto de Italva da linha de Itaperuna não serve para a viagem de Campos", async () => {
+    const p = (await db.query<{ id: string }>(
+      "insert into pontos (nome, cidade, linha, ordem) values ('Trevo (Itaperuna)', 'italva', 'itaperuna', 2) returning id",
+    )).rows[0].id;
+    const v = await viagemDia(ids.voltaNoiteCampos, "2026-10-26");
+    expect(await falhaComo(db, ALUNO, "select reservar($1, null, $2)", [v, p])).toMatch(/desembarque em Italva desta linha/);
+    // Linha diferente da cidade num ponto de Campos é recusada no cadastro.
+    expect(
+      await falhaComo(db, SEMTRANSP, "insert into pontos (nome, cidade, linha, ordem) values ('X', 'campos', 'itaperuna', 1)"),
+    ).toMatch(/pontos_linha_valida/);
+  });
+
   it("SEMTRANSP move todos de um ponto para outro ônibus", async () => {
     const on1 = (await db.query<{ id: string }>("insert into onibus (prefixo, placa, capacidade) values ('01', 'AAA1A11', 40) returning id")).rows[0].id;
     const on2 = (await db.query<{ id: string }>("insert into onibus (prefixo, placa, capacidade) values ('02', 'BBB2B22', 40) returning id")).rows[0].id;

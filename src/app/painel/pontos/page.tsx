@@ -19,12 +19,40 @@ type Ponto = {
   lng: number | null;
   ordem: number;
   ativo: boolean;
+  linha: "campos" | "itaperuna" | null;
 };
 
-const GRUPOS: { cidade: Cidade; titulo: string; ajuda: string }[] = [
-  { cidade: "italva", titulo: "Ida · Italva", ajuda: "Onde o aluno embarca na ida e desce na volta." },
-  { cidade: "campos", titulo: "Volta · Campos", ajuda: "Onde o aluno embarca na volta e desce na ida." },
-  { cidade: "itaperuna", titulo: "Volta · Itaperuna", ajuda: "Onde o aluno embarca na volta e desce na ida." },
+const GRUPOS: { chave: string; titulo: string; ajuda: string; filtro: (p: Ponto) => boolean }[] = [
+  {
+    chave: "ida-itaperuna",
+    titulo: "Ida · Italva x Itaperuna",
+    ajuda: "Em Italva, na linha de Itaperuna: embarque da ida e desembarque da volta.",
+    filtro: (p) => p.cidade === "italva" && p.linha === "itaperuna",
+  },
+  {
+    chave: "ida-campos",
+    titulo: "Ida · Italva x Campos",
+    ajuda: "Em Italva, na linha de Campos: embarque da ida e desembarque da volta.",
+    filtro: (p) => p.cidade === "italva" && p.linha === "campos",
+  },
+  {
+    chave: "volta-campos",
+    titulo: "Volta · Campos x Italva",
+    ajuda: "Em Campos: embarque da volta e desembarque da ida.",
+    filtro: (p) => p.cidade === "campos",
+  },
+  {
+    chave: "volta-itaperuna",
+    titulo: "Volta · Itaperuna x Italva",
+    ajuda: "Em Itaperuna: embarque da volta e desembarque da ida.",
+    filtro: (p) => p.cidade === "itaperuna",
+  },
+  {
+    chave: "ida-sem-linha",
+    titulo: "Ida · Italva (sem linha definida)",
+    ajuda: "Cadastrados antes da separação por linha: valem para as duas. Edite e escolha a linha.",
+    filtro: (p) => p.cidade === "italva" && !p.linha,
+  },
 ];
 
 export default async function PaginaPontos({ searchParams }: { searchParams: Promise<{ editar?: string }> }) {
@@ -42,10 +70,11 @@ export default async function PaginaPontos({ searchParams }: { searchParams: Pro
       </Titulo>
       <div className="grid items-start gap-6 lg:grid-cols-[1fr_340px]">
         <div className="flex flex-col gap-6">
-          {GRUPOS.map(({ cidade, titulo, ajuda }) => {
-            const daCidade = lista.filter((p) => p.cidade === cidade);
+          {GRUPOS.map(({ chave, titulo, ajuda, filtro }) => {
+            const daCidade = lista.filter(filtro);
+            if (chave === "ida-sem-linha" && daCidade.length === 0) return null;
             return (
-              <div key={cidade}>
+              <div key={chave}>
                 <h2 className="mb-1 font-semibold">{titulo}</h2>
                 <p className="mb-2 text-xs text-slate-500">{ajuda}</p>
                 {daCidade.length === 0 ? (
@@ -121,7 +150,7 @@ export default async function PaginaPontos({ searchParams }: { searchParams: Pro
             <Campo rotulo="Nome">
               <Entrada name="nome" defaultValue={atual?.nome} required placeholder="Ex.: Praça da Matriz" />
             </Campo>
-            <TipoPonto cidade={atual?.cidade} />
+            <TipoPonto cidade={atual?.cidade} linha={atual?.linha} />
             <Campo rotulo="Ordem na rota" ajuda="Define a sequência da rota e a ordem da lista do motorista.">
               <Entrada name="ordem" type="number" min={0} defaultValue={atual?.ordem ?? 0} className="w-28" />
             </Campo>
