@@ -418,3 +418,4 @@ Construa uma fase por vez e só avance com a minha aprovação.
 2. **CPF fictício em testes:** com `ACEITAR_CPF_DE_TESTE=sim`, o app aceita qualquer número de 11 dígitos; o banco confere só o formato. Remover a variável em produção.
 3. **Admin testa todas as áreas com o próprio login:** a página de login escolhida (ou a faixa "Ver como") define a área (cookie `modo_admin`); o Admin tem cadastro de aluno e de motorista para isso.
 4. **Exclusão de viagem modelo:** sempre permitida; apaga junto as viagens do dia, reservas (inclusive ativas), embarques e frequência daquela viagem.
+5. **Rotas liberadas por aluno** (substitui a grade semanal na tela): a SEMEDUC marca a cidade (Campos, Itaperuna ou ambos) e as idas e voltas que o aluno pode reservar (`aluno_viagens`); valem em todos os dias em que a viagem opera. A grade semanal antiga continua aceita no banco. A instituição de cada viagem (dias sem aula) vem do curso do aluno na cidade dela.

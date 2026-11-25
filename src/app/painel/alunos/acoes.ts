@@ -46,9 +46,9 @@ export async function criarAluno(_: Estado, fd: FormData): Promise<Estado> {
 }
 
 /**
- * Formulário único da tela do aluno: dados, situação, matrícula, pontos e grade.
- * A instituição de cada dia da grade vem dos vínculos (a da cidade da viagem),
- * para valerem os dias sem aula do calendário dela.
+ * Formulário único da tela do aluno: dados, situação, matrícula, pontos e rotas liberadas.
+ * A instituição de cada viagem (dias sem aula) vem do curso do aluno na cidade dela,
+ * calculada no banco (instituicao_do_aluno).
  */
 export async function salvarAluno(_: Estado, fd: FormData): Promise<Estado> {
   return executar(async () => {
@@ -82,40 +82,19 @@ export async function salvarAluno(_: Estado, fd: FormData): Promise<Estado> {
       if (r.error) throw r.error;
     }
 
-    // Grade: só a ida e a volta de cada dia (pontos do dia ficam como estavam).
-    const [{ data: viagens }, { data: vinculos }] = await Promise.all([
-      supabase.from("viagens_modelo").select("id, cidade"),
-      supabase.from("aluno_vinculos").select("instituicao:instituicoes(id, cidade)").eq("aluno_id", id),
-    ]);
-    const cidadeDe = (v: string | null) => (viagens ?? []).find((x) => x.id === v)?.cidade;
-    const instituicaoEm = (cidade?: string) =>
-      ((vinculos ?? []) as unknown as { instituicao: { id: string; cidade: string } | null }[]).find(
-        (x) => x.instituicao?.cidade === cidade,
-      )?.instituicao?.id ?? null;
-
-    const salvar = [];
-    const apagar: number[] = [];
-    for (let dia = 1; dia <= 7; dia++) {
-      if (!fd.has(`ida_${dia}`)) continue;
-      const ida = campo(fd, `ida_${dia}`);
-      const volta = campo(fd, `volta_${dia}`);
-      if (ida || volta) {
-        salvar.push({
-          aluno_id: id,
-          dia_semana: dia,
-          viagem_ida_modelo_id: ida,
-          viagem_volta_modelo_id: volta,
-          instituicao_id: instituicaoEm(cidadeDe(ida) ?? cidadeDe(volta)),
-        });
-      } else apagar.push(dia);
-    }
-    if (salvar.length) {
-      const { error } = await supabase.from("grade_semanal").upsert(salvar, { onConflict: "aluno_id,dia_semana" });
-      if (error) throw error;
-    }
-    if (apagar.length) {
-      const { error } = await supabase.from("grade_semanal").delete().eq("aluno_id", id).in("dia_semana", apagar);
-      if (error) throw error;
+    // Rotas liberadas (idas e voltas marcadas). Substituem a grade semanal antiga do aluno.
+    if (fd.has("rotas_enviadas")) {
+      const escolhidas = [...new Set(fd.getAll("viagens").map(String).filter(Boolean))];
+      const { error: e2 } = await supabase.from("aluno_viagens").delete().eq("aluno_id", id);
+      if (e2) throw e2;
+      if (escolhidas.length) {
+        const { error: e3 } = await supabase
+          .from("aluno_viagens")
+          .insert(escolhidas.map((viagem_modelo_id) => ({ aluno_id: id, viagem_modelo_id })));
+        if (e3) throw e3;
+      }
+      const { error: e4 } = await supabase.from("grade_semanal").delete().eq("aluno_id", id);
+      if (e4) throw e4;
     }
 
     revalidatePath(caminho(id));

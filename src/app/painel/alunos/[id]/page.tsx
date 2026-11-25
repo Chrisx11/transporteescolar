@@ -19,7 +19,7 @@ import {
   salvarAluno,
 } from "../acoes";
 import { FormDocumentos } from "./form-documentos";
-import { GradeViagens, type OpcaoViagem } from "./grade-viagens";
+import { RotasAluno, type Rota } from "./rotas-aluno";
 
 export const metadata: Metadata = { title: "Aluno" };
 
@@ -36,7 +36,7 @@ export default async function PaginaAluno({ params }: { params: Promise<{ id: st
     { data: aluno },
     { data: vinculos },
     { data: pontosVolta },
-    { data: grade },
+    { data: rotasAluno },
     { data: instituicoes },
     { data: pontos },
     { data: viagens },
@@ -46,7 +46,7 @@ export default async function PaginaAluno({ params }: { params: Promise<{ id: st
     supabase.from("alunos").select("*").eq("usuario_id", id).maybeSingle(),
     supabase.from("aluno_vinculos").select("id, curso, periodo, turno, instituicao:instituicoes(nome, cidade)").eq("aluno_id", id),
     supabase.from("aluno_pontos_volta").select("cidade, ponto_id").eq("aluno_id", id),
-    supabase.from("grade_semanal").select("dia_semana, viagem_ida_modelo_id, viagem_volta_modelo_id").eq("aluno_id", id),
+    supabase.from("aluno_viagens").select("viagem_modelo_id").eq("aluno_id", id),
     supabase.from("instituicoes").select("id, nome, cidade").eq("ativa", true).order("nome"),
     supabase.from("pontos").select("id, nome, cidade, ordem").eq("ativo", true).order("ordem"),
     supabase
@@ -69,12 +69,16 @@ export default async function PaginaAluno({ params }: { params: Promise<{ id: st
   ]);
 
   const listaPontos = (pontos ?? []) as Ponto[];
-  const opcoesViagem: OpcaoViagem[] = ((viagens ?? []) as Viagem[]).map((v) => ({
-    id: v.id,
-    sentido: v.sentido as "ida" | "volta",
-    dias: v.dias_semana,
-    rotulo: `${CIDADES[v.cidade]} · ${v.nome} (${hhmm(v.hora_saida)})`,
-  }));
+  const rotas: Rota[] = ((viagens ?? []) as Viagem[])
+    .filter((v) => v.cidade === "campos" || v.cidade === "itaperuna")
+    .map((v) => ({
+      id: v.id,
+      cidade: v.cidade as Rota["cidade"],
+      nome: v.nome,
+      sentido: v.sentido as Rota["sentido"],
+      hora: hhmm(v.hora_saida),
+      dias: v.dias_semana,
+    }));
   const situacao = aluno.situacao as keyof typeof SITUACOES_ALUNO;
   const pontoVolta = (pontosVolta ?? [])[0]?.ponto_id ?? "";
 
@@ -157,14 +161,11 @@ export default async function PaginaAluno({ params }: { params: Promise<{ id: st
             </div>
           </Secao>
 
-          <Secao titulo="Viagens que pode reservar">
-            {opcoesViagem.length === 0 ? (
+          <Secao titulo="Rotas que pode reservar">
+            {rotas.length === 0 ? (
               <p className="text-sm text-amber-700">Nenhuma viagem modelo ativa. Cadastre em Transportes → Viagens modelo.</p>
             ) : (
-              <GradeViagens
-                viagens={opcoesViagem}
-                grade={(grade ?? []).map((g) => ({ dia: g.dia_semana, ida: g.viagem_ida_modelo_id, volta: g.viagem_volta_modelo_id }))}
-              />
+              <RotasAluno rotas={rotas} selecionadas={(rotasAluno ?? []).map((r) => r.viagem_modelo_id)} />
             )}
           </Secao>
 
