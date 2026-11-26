@@ -6,6 +6,8 @@ import { criarClienteServidor } from "@/lib/supabase/server";
 import { criarClienteAdmin } from "@/lib/supabase/admin";
 import { campo, campoObrigatorio, ErroValidacao, executar, type Estado } from "@/lib/acoes";
 import { criarUsuario } from "@/lib/usuarios";
+import { DIAS_VALIDADE_LINK, linkCompletar, novoCodigo } from "@/lib/codigo-link";
+import { emailCompletarPedido, emailConfigurado, enviarEmails } from "@/lib/email";
 
 /** Copia um arquivo do pedido para a pasta do aluno (bucket de destino pode ser outro). */
 async function copiar(origem: string, bucket: "documentos" | "fotos", destino: string) {
@@ -107,3 +109,95 @@ export async function recusarPreCadastro(_: Estado, fd: FormData): Promise<Estad
   });
 }
 
+
+// ---------------------------------------------------------------------
+// Pedidos "aguardando complemento" (importados das planilhas): link individual
+// ---------------------------------------------------------------------
+
+/** Gera um link novo para o pedido (o anterior deixa de valer) e o devolve para copiar. */
+export async function gerarLinkPedido(id: string): Promise<{ ok: true; link: string } | { ok: false; erro: string }> {
+  try {
+    await sessaoComPerfil("semeduc");
+    const supabase = await criarClienteServidor();
+    const c = novoCodigo();
+    const { data, error } = await supabase
+      .from("pre_cadastros")
+      .update({ codigo_hash: c.hash, codigo_expira_em: c.expiraEm })
+      .eq("id", id)
+      .eq("status", "aguardando")
+      .select("id");
+    if (error || !data?.length) return { ok: false, erro: "Não foi possível gerar o link (o pedido não está aguardando complemento)." };
+    return { ok: true, link: linkCompletar(c.codigo) };
+  } catch (e) {
+    return { ok: false, erro: (e as Error).message };
+  }
+}
+
+type Aguardando = { id: string; nome: string; email: string | null };
+
+/** Gera links novos e envia por e-mail; registra o resultado de cada pedido. */
+async function enviarLinks(pedidos: Aguardando[]) {
+  const supabase = await criarClienteServidor();
+  const comEmail = pedidos.filter((p) => p.email);
+  const preparados: { p: Aguardando; link: string }[] = [];
+  for (const p of comEmail) {
+    const c = novoCodigo();
+    const { error } = await supabase.from("pre_cadastros").update({ codigo_hash: c.hash, codigo_expira_em: c.expiraEm }).eq("id", p.id);
+    if (!error) preparados.push({ p, link: linkCompletar(c.codigo) });
+  }
+  const resultados = await enviarEmails(preparados.map(({ p, link }) => emailCompletarPedido(p.nome, p.email!, link, DIAS_VALIDADE_LINK)));
+  let enviados = 0;
+  let primeiroErro: string | null = null;
+  for (const [i, { p }] of preparados.entries()) {
+    const r = resultados[i];
+    if (r.ok) enviados++;
+    else primeiroErro ??= r.erro;
+    await supabase
+      .from("pre_cadastros")
+      .update(r.ok ? { email_enviado_em: new Date().toISOString(), email_erro: null } : { email_erro: r.erro })
+      .eq("id", p.id);
+  }
+  return { enviados, falhas: preparados.length - enviados, semEmail: pedidos.length - comEmail.length, primeiroErro };
+}
+
+export async function enviarLinkPedido(_: Estado, fd: FormData): Promise<Estado> {
+  return executar(async () => {
+    await sessaoComPerfil("semeduc");
+    const supabase = await criarClienteServidor();
+    const { data: p, error } = await supabase
+      .from("pre_cadastros")
+      .select("id, nome, email")
+      .eq("id", campoObrigatorio(fd, "id", "id"))
+      .eq("status", "aguardando")
+      .single();
+    if (error) throw error;
+    const r = await enviarLinks([p]);
+    revalidatePath("/painel/pedidos-passe");
+    if (r.primeiroErro) throw new ErroValidacao(r.primeiroErro);
+    return { ok: `Link enviado para ${p.email}.` };
+  });
+}
+
+/** Envia o link para os pedidos aguardando que ainda não receberam e-mail (até 200 por vez). */
+export async function enviarLinksNaoEnviados(): Promise<Estado> {
+  return executar(async () => {
+    await sessaoComPerfil("semeduc");
+    if (!emailConfigurado()) throw new ErroValidacao("O envio de e-mail ainda não foi configurado (falta a chave do Resend nas configurações do site).");
+    const supabase = await criarClienteServidor();
+    const { data, error } = await supabase
+      .from("pre_cadastros")
+      .select("id, nome, email")
+      .eq("status", "aguardando")
+      .is("email_enviado_em", null)
+      .order("criado_em")
+      .limit(200);
+    if (error) throw error;
+    if (!data?.length) return { ok: "Todos os pedidos aguardando já receberam o link." };
+    const r = await enviarLinks(data);
+    revalidatePath("/painel/pedidos-passe");
+    const partes = [`${r.enviados} e-mail(s) enviado(s)`];
+    if (r.falhas) partes.push(`${r.falhas} com erro (${r.primeiroErro})`);
+    if (r.semEmail) partes.push(`${r.semEmail} sem e-mail`);
+    return { ok: partes.join(" · ") + "." };
+  });
+}

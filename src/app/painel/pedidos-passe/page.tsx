@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CheckCircle2, ChevronRight, ExternalLink, UserRoundPlus, XCircle } from "lucide-react";
+import { CheckCircle2, ChevronRight, ExternalLink, Mail, MailCheck, Send, UserRoundPlus, XCircle } from "lucide-react";
 import { exigirPerfil } from "@/lib/auth";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { BotaoEnviar, Formulario } from "@/components/formulario";
@@ -8,7 +8,10 @@ import { Campo, Entrada, Selo, Titulo, Vazio, cx } from "@/components/ui";
 import { formatarCpf } from "@/lib/cpf";
 import { CIDADES, TURNOS, type Cidade } from "@/lib/rotulos";
 import { dataBR, dataHoraBR } from "@/lib/tempo";
-import { aprovarPreCadastro, recusarPreCadastro } from "./acoes";
+import { AcaoRapida } from "@/components/formulario";
+import { emailConfigurado } from "@/lib/email";
+import { aprovarPreCadastro, enviarLinkPedido, enviarLinksNaoEnviados, recusarPreCadastro } from "./acoes";
+import { CopiarLink } from "./copiar-link";
 
 export const metadata: Metadata = { title: "Pedidos de passe" };
 
@@ -30,7 +33,13 @@ type Pedido = {
   comprovante_path: string;
   residencia_path: string | null;
   foto_path: string | null;
-  status: "pendente" | "aprovado" | "recusado";
+  status: "aguardando" | "pendente" | "aprovado" | "recusado";
+  origem: "site" | "planilha";
+  linha: string | null;
+  dias: string | null;
+  email_enviado_em: string | null;
+  email_erro: string | null;
+  codigo_expira_em: string | null;
   motivo: string | null;
   aluno_id: string | null;
   analisado_em: string | null;
@@ -39,6 +48,7 @@ type Pedido = {
 };
 
 const ABAS = [
+  { chave: "aguardando", rotulo: "Aguardando complemento" },
   { chave: "pendente", rotulo: "Esperando análise" },
   { chave: "aprovado", rotulo: "Aprovados" },
   { chave: "recusado", rotulo: "Recusados" },
@@ -50,14 +60,18 @@ export default async function PaginaPedidosPasse({ searchParams }: { searchParam
   const pedida = (await searchParams).aba;
   const aba = ABAS.find((a) => a.chave === pedida)?.chave ?? "pendente";
   const supabase = await criarClienteServidor();
-  const [{ data }, { count: pendentes }] = await Promise.all([
-    supabase
-      .from("pre_cadastros")
-      .select("*, instituicao:instituicoes(nome)")
-      .eq("status", aba)
-      .order("criado_em", { ascending: aba === "pendente" })
-      .limit(100),
+  const [{ data }, { count: pendentes }, { count: aguardando }, { count: naoEnviados }] = await Promise.all([
+    aba === "aguardando"
+      ? supabase.from("pre_cadastros").select("*, instituicao:instituicoes(nome)").eq("status", "aguardando").order("nome").limit(1000)
+      : supabase
+          .from("pre_cadastros")
+          .select("*, instituicao:instituicoes(nome)")
+          .eq("status", aba)
+          .order("criado_em", { ascending: aba === "pendente" })
+          .limit(100),
     supabase.from("pre_cadastros").select("id", { count: "exact", head: true }).eq("status", "pendente"),
+    supabase.from("pre_cadastros").select("id", { count: "exact", head: true }).eq("status", "aguardando"),
+    supabase.from("pre_cadastros").select("id", { count: "exact", head: true }).eq("status", "aguardando").is("email_enviado_em", null),
   ]);
   const lista = (data ?? []) as unknown as Pedido[];
 
@@ -92,11 +106,16 @@ export default async function PaginaPedidosPasse({ searchParams }: { searchParam
             {a.chave === "pendente" && (pendentes ?? 0) > 0 && (
               <span className="ml-1.5 rounded-full bg-amber-500 px-1.5 text-xs font-bold text-white">{pendentes}</span>
             )}
+            {a.chave === "aguardando" && (aguardando ?? 0) > 0 && (
+              <span className="ml-1.5 rounded-full bg-slate-400 px-1.5 text-xs font-bold text-white">{aguardando}</span>
+            )}
           </Link>
         ))}
       </div>
 
-      {lista.length === 0 ? (
+      {aba === "aguardando" ? (
+        <ListaAguardando lista={lista} naoEnviados={naoEnviados ?? 0} emailPronto={emailConfigurado()} />
+      ) : lista.length === 0 ? (
         <Vazio icone={UserRoundPlus}>
           {aba === "pendente" ? "Nenhum pedido esperando análise." : "Nenhum pedido nesta lista."}
         </Vazio>
@@ -112,6 +131,7 @@ export default async function PaginaPedidosPasse({ searchParams }: { searchParam
                     CPF {formatarCpf(p.cpf)} · {p.instituicao?.nome ?? p.instituicao_outra} ({CIDADES[p.cidade]}) · {p.curso}
                   </span>
                 </span>
+                {p.origem === "planilha" && <Selo cor="azul">da planilha</Selo>}
                 <span className="hidden text-xs text-slate-500 sm:block">{dataHoraBR(p.criado_em)}</span>
                 {p.status === "aprovado" && <Selo cor="verde">aprovado</Selo>}
                 {p.status === "recusado" && <Selo cor="vermelho">recusado</Selo>}
@@ -195,5 +215,99 @@ function LinkDocumento({ href, rotulo }: { href?: string; rotulo: string }) {
     >
       <ExternalLink className="size-3.5" /> {rotulo}
     </a>
+  );
+}
+
+/** Alunos importados das planilhas que ainda não completaram o pedido pelo link. */
+function ListaAguardando({ lista, naoEnviados, emailPronto }: { lista: Pedido[]; naoEnviados: number; emailPronto: boolean }) {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-suave">
+        <div className="min-w-0 flex-1 text-sm text-slate-600">
+          Estes alunos vieram das planilhas do sistema antigo. Cada um recebe um link só dele (vale 30 dias) para digitar o CPF e
+          anexar os documentos. Quando completar, o pedido passa para <strong>Esperando análise</strong>.
+          {!emailPronto && (
+            <p className="mt-2 font-medium text-amber-700">
+              O envio de e-mail ainda não está configurado. Por enquanto use “Copiar link” e mande pelo WhatsApp.
+            </p>
+          )}
+        </div>
+        {emailPronto && naoEnviados > 0 && (
+          <AcaoRapida
+            acao={enviarLinksNaoEnviados}
+            campos={{}}
+            rotulo={`Enviar e-mail para quem ainda não recebeu (${naoEnviados})`}
+            icone={<Send />}
+            variante="primario"
+            confirmar={`Enviar o link por e-mail para ${Math.min(naoEnviados, 200)} aluno(s)${naoEnviados > 200 ? " (os próximos ficam para o próximo clique)" : ""}?`}
+          />
+        )}
+      </div>
+
+      {lista.length === 0 ? (
+        <Vazio icone={UserRoundPlus}>Nenhum aluno aguardando complemento.</Vazio>
+      ) : (
+        <div className="overflow-x-auto rounded-2xl border border-slate-200/80 bg-white shadow-suave">
+          <table className="w-full min-w-[860px] text-left text-sm">
+            <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+              <tr>
+                <th className="px-4 py-2.5">Aluno</th>
+                <th className="px-4 py-2.5">Faculdade / curso</th>
+                <th className="px-4 py-2.5">Linha e dias</th>
+                <th className="px-4 py-2.5">E-mail</th>
+                <th className="px-4 py-2.5"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {lista.map((p) => (
+                <tr key={p.id} className="align-top">
+                  <td className="px-4 py-2.5">
+                    <p className="font-medium text-slate-900">{p.nome}</p>
+                    <p className="text-xs text-slate-500">{p.telefone}</p>
+                  </td>
+                  <td className="px-4 py-2.5 text-xs text-slate-700">
+                    {p.instituicao?.nome ?? p.instituicao_outra} ({CIDADES[p.cidade]})
+                    <br />
+                    {p.curso}
+                  </td>
+                  <td className="px-4 py-2.5 text-xs text-slate-600">
+                    {p.linha}
+                    {p.dias && <span className="block text-slate-400">{p.dias}</span>}
+                  </td>
+                  <td className="px-4 py-2.5 text-xs">
+                    <p className="text-slate-700">{p.email}</p>
+                    {p.email_erro ? (
+                      <p className="text-red-600">Erro: {p.email_erro}</p>
+                    ) : p.email_enviado_em ? (
+                      <p className="flex items-center gap-1 text-emerald-700">
+                        <MailCheck className="size-3.5" /> enviado {dataHoraBR(p.email_enviado_em)}
+                      </p>
+                    ) : (
+                      <p className="flex items-center gap-1 text-slate-400">
+                        <Mail className="size-3.5" /> ainda não enviado
+                      </p>
+                    )}
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <div className="flex flex-wrap justify-end gap-1.5">
+                      <CopiarLink id={p.id} jaEnviado={!!p.email_enviado_em} />
+                      {emailPronto && p.email && (
+                        <AcaoRapida
+                          acao={enviarLinkPedido}
+                          campos={{ id: p.id }}
+                          rotulo={p.email_enviado_em ? "Reenviar" : "Enviar e-mail"}
+                          variante="fantasma"
+                          confirmar={p.email_enviado_em ? "Reenviar? O link anterior deixa de valer." : undefined}
+                        />
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
   );
 }

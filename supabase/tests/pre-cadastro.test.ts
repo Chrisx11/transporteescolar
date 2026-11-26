@@ -44,3 +44,31 @@ describe("pré-cadastro", () => {
     ).rejects.toThrow(/check/i);
   });
 });
+
+describe("pedido aguardando complemento", () => {
+  it("aceita sem CPF e documentos enquanto aguarda, mas não vai para análise incompleto", async () => {
+    const r = await db.query<{ id: string }>(
+      `insert into pre_cadastros (nome, telefone, email, cidade, instituicao_outra, curso, turno, status, origem, codigo_hash)
+       values ('Importado', '(22) 98888-0000', 'importado@exemplo.com', 'itaperuna', 'IFF', 'Direito', 'noite', 'aguardando', 'planilha', 'h1')
+       returning id`,
+    );
+    const id = r.rows[0].id;
+    await expect(db.query("update pre_cadastros set status = 'pendente' where id = $1", [id])).rejects.toThrow(/completo_para_analise/);
+    await db.query(
+      "update pre_cadastros set status = 'pendente', cpf = '99988877766', cpf_path = 'a', comprovante_path = 'b', codigo_hash = null where id = $1",
+      [id],
+    );
+    const ok = await db.query<{ status: string }>("select status from pre_cadastros where id = $1", [id]);
+    expect(ok.rows[0].status).toBe("pendente");
+  });
+
+  it("não importa o mesmo e-mail duas vezes enquanto aguarda", async () => {
+    const ins = () =>
+      db.query(
+        `insert into pre_cadastros (nome, telefone, email, cidade, instituicao_outra, curso, turno, status, origem, codigo_hash)
+         values ('X', '1', 'Repetido@Exemplo.com', 'campos', 'UENF', 'C', 'noite', 'aguardando', 'planilha', md5(random()::text))`,
+      );
+    await ins();
+    await expect(ins()).rejects.toThrow(/duplicate|unique/i);
+  });
+});

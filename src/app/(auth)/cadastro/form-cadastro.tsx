@@ -13,7 +13,7 @@ export type Instituicao = { id: string; nome: string; cidade: "campos" | "itaper
 const MAX_MB = 10;
 const OUTRA = "outra";
 
-function mascaraTelefone(v: string) {
+export function mascaraTelefone(v: string) {
   const d = v.replace(/\D/g, "").slice(0, 11);
   if (d.length <= 2) return d ? `(${d}` : "";
   if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
@@ -260,7 +260,7 @@ export function FormCadastro({ instituicoes }: { instituicoes: Instituicao[] }) 
   );
 }
 
-function Secao({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+export function Secao({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
     <fieldset className="flex flex-col gap-3">
       <legend className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">{titulo}</legend>
@@ -269,7 +269,7 @@ function Secao({ titulo, children }: { titulo: string; children: React.ReactNode
   );
 }
 
-function ItemDocumento({ titulo, texto, obrigatorio, children }: { titulo: string; texto: string; obrigatorio?: boolean; children: React.ReactNode }) {
+export function ItemDocumento({ titulo, texto, obrigatorio, children }: { titulo: string; texto: string; obrigatorio?: boolean; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-3 sm:flex-row sm:items-center">
       <div className="min-w-0 flex-1">
@@ -283,7 +283,7 @@ function ItemDocumento({ titulo, texto, obrigatorio, children }: { titulo: strin
   );
 }
 
-function Anexo({
+export function Anexo({
   campo,
   arquivo,
   aoEscolher,
