@@ -50,6 +50,7 @@ const emailValido = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 async function lerPlanilha(arq) {
   const nome = basename(arq).toUpperCase();
   const cidade = nome.includes("ITAPERUNA") ? "itaperuna" : nome.includes("CAMPOS") ? "campos" : null;
+  const tipo = nome.includes("RENOV") ? "renovação" : "inscrição";
   if (!cidade) throw new Error(`Não sei a cidade da planilha "${basename(arq)}" (o nome precisa ter CAMPOS ou ITAPERUNA).`);
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.readFile(arq);
@@ -85,6 +86,7 @@ async function lerPlanilha(arq) {
     const nascCru = C.nasc >= 0 ? v[C.nasc] : null;
     linhas.push({
       arquivo: basename(arq),
+      origemTexto: `${cidade === "campos" ? "Campos" : "Itaperuna"} ${tipo}`,
       carimbo: C.carimbo >= 0 && v[C.carimbo] instanceof Date ? v[C.carimbo].getTime() : n,
       cidade,
       nome: g(C.nome).replace(/\s+/g, " "),
@@ -122,8 +124,12 @@ async function importar() {
       invalidos.push(l);
       continue;
     }
-    if (porEmail.has(l.email)) repetidos.push(l);
-    else porEmail.set(l.email, l);
+    if (porEmail.has(l.email)) {
+      repetidos.push(l);
+      // Guarda no pedido que ficou de onde mais o aluno respondeu (a Educação decide na análise).
+      const fica = porEmail.get(l.email);
+      fica.outras = [...new Set([...(fica.outras ?? []), l.origemTexto])];
+    } else porEmail.set(l.email, l);
   }
 
   // Já tem login ou pedido no sistema novo?
@@ -150,6 +156,8 @@ async function importar() {
   for (const arq of arquivos) console.log(`  ${basename(arq)}: ${todas.filter((l) => l.arquivo === basename(arq)).length} linha(s)`);
   console.log(`  e-mails repetidos (fica só a resposta mais recente): ${repetidos.length}`);
   console.log(`  e-mails inválidos (não importados): ${invalidos.length}`);
+  const outraCidade = [...porEmail.values()].filter((l) => (l.outras ?? []).some((o) => !o.startsWith(l.cidade === "campos" ? "Campos" : "Itaperuna"))).length;
+  console.log(`  alunos que também responderam para a outra cidade (fica a mais recente, com aviso no pedido): ${outraCidade}`);
   console.log(`  já têm login ou pedido no sistema novo (não importados): ${jaExistem.size}`);
   console.log(`  pedidos a criar: ${novos.length}  (Campos ${novos.filter((l) => l.cidade === "campos").length} · Itaperuna ${novos.filter((l) => l.cidade === "itaperuna").length})`);
   console.log(`  instituições a cadastrar: ${faltando.length}${faltando.length ? " → " + faltando.map((k) => k.replace("|", ": ")).join(", ") : ""}`);
@@ -182,7 +190,7 @@ async function importar() {
     dias: l.dias || null,
     data_nascimento: l.data_nascimento,
     endereco: l.endereco,
-    observacao: l.observacao,
+    observacao: [l.observacao, l.outras?.length ? `Também respondeu: ${l.outras.join(", ")} (ficou a resposta mais recente: ${l.origemTexto})` : null].filter(Boolean).join(" · ") || null,
     status: "aguardando",
     origem: "planilha",
     // O link de verdade é gerado ao enviar o e-mail ou copiar o link; este só marca o pedido como aguardando.

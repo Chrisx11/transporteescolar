@@ -37,6 +37,7 @@ type Pedido = {
   origem: "site" | "planilha";
   linha: string | null;
   dias: string | null;
+  observacao: string | null;
   email_enviado_em: string | null;
   email_erro: string | null;
   codigo_expira_em: string | null;
@@ -145,6 +146,12 @@ export default async function PaginaPedidosPasse({ searchParams }: { searchParam
                   <Dado rotulo="Endereço" valor={[p.endereco, p.bairro].filter(Boolean).join(" · ") || null} />
                   <Dado rotulo="Instituição" valor={`${p.instituicao?.nome ?? `${p.instituicao_outra} (não está na lista)`} · ${CIDADES[p.cidade]}`} />
                   <Dado rotulo="Curso" valor={`${p.curso}${p.periodo ? ` · ${p.periodo}` : ""} · ${TURNOS[p.turno]}`} />
+                  {(p.linha || p.dias) && <Dado rotulo="Linha e dias (planilha)" valor={[p.linha, p.dias].filter(Boolean).join(" · ")} />}
+                  {p.observacao && (
+                    <div className="sm:col-span-2">
+                      <Dado rotulo="Observações" valor={p.observacao} />
+                    </div>
+                  )}
                   {p.status === "pendente" && (
                     <div className="flex flex-wrap gap-2 sm:col-span-2">
                       <LinkDocumento href={links[p.cpf_path]} rotulo="Documento do CPF" />
