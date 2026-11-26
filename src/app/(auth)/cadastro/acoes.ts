@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { randomUUID } from "node:crypto";
 import { criarClienteAdmin } from "@/lib/supabase/admin";
 import { cpfAceito, limparCpf } from "@/lib/cpf";
+import { nomePadrao, telefonePadrao } from "@/lib/formatos";
 
 /**
  * Pré-cadastro público (sem login). Os arquivos vão direto do celular para o
@@ -110,10 +111,10 @@ export async function concluirCadastro(id: string, d: DadosCadastro): Promise<Re
 
     const { error } = await admin.from("pre_cadastros").insert({
       id,
-      nome: texto(d.nome),
+      nome: nomePadrao(d.nome),
       cpf,
       data_nascimento: texto(d.data_nascimento) || null,
-      telefone: texto(d.telefone),
+      telefone: telefonePadrao(d.telefone),
       email: texto(d.email).toLowerCase(),
       endereco: texto(d.endereco) || null,
       bairro: texto(d.bairro) || null,

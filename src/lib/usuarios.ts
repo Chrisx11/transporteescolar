@@ -5,6 +5,7 @@ import { cpfAceito, limparCpf } from "@/lib/cpf";
 import { gerarSenhaProvisoria } from "@/lib/senha";
 import { emailInterno, type Perfil } from "@/lib/rotulos";
 import { ErroValidacao } from "@/lib/acoes";
+import { nomePadrao, telefonePadrao } from "@/lib/formatos";
 
 export type NovoUsuario = {
   cpf: string;
@@ -49,9 +50,9 @@ export async function criarUsuario(dados: NovoUsuario): Promise<{ id: string; se
   const { error } = await supabase.from("usuarios").insert({
     id: criado.user.id,
     cpf,
-    nome: dados.nome,
+    nome: nomePadrao(dados.nome),
     email,
-    telefone: dados.telefone,
+    telefone: dados.telefone ? telefonePadrao(dados.telefone) : null,
     perfil: dados.perfil,
     troca_senha_obrigatoria: true,
   });
@@ -79,7 +80,7 @@ export async function atualizarUsuario(
   // Primeiro a tabela (a RLS confere a permissão), depois o login no Auth.
   const { data, error } = await supabase
     .from("usuarios")
-    .update({ nome: dados.nome, email, telefone: dados.telefone })
+    .update({ nome: nomePadrao(dados.nome), email, telefone: dados.telefone ? telefonePadrao(dados.telefone) : null })
     .eq("id", id)
     .select("id");
   if (error) throw error;

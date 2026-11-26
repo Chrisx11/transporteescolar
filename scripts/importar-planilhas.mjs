@@ -46,6 +46,21 @@ const turnoDaLinha = (l) => {
   return m && n ? "integral" : m ? "manha" : n ? "noite" : "noite";
 };
 const emailValido = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+// Mesma padronização de src/lib/formatos.ts: nome em maiúsculas e telefone (00) 00000-0000.
+const nomePadrao = (n) => (n ?? "").replace(/\s+/g, " ").trim().toLocaleUpperCase("pt-BR");
+function telefonePadrao(t) {
+  const original = (t ?? "").trim();
+  let d = original.replace(/\D/g, "");
+  if (!d) return original;
+  if (d.length > 13) d = d.slice(0, d.startsWith("55") ? 13 : 11);
+  if ((d.length === 13 || d.length === 12) && d.startsWith("55")) d = d.slice(2);
+  if (d.length === 12 && d.startsWith("0")) d = d.slice(1);
+  if (d.length === 9 || d.length === 8) d = "22" + d;
+  if (d.length === 10 && /[6-9]/.test(d[2])) d = d.slice(0, 2) + "9" + d.slice(2);
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return original;
+}
 
 async function lerPlanilha(arq) {
   const nome = basename(arq).toUpperCase();
@@ -89,8 +104,8 @@ async function lerPlanilha(arq) {
       origemTexto: `${cidade === "campos" ? "Campos" : "Itaperuna"} ${tipo}`,
       carimbo: C.carimbo >= 0 && v[C.carimbo] instanceof Date ? v[C.carimbo].getTime() : n,
       cidade,
-      nome: g(C.nome).replace(/\s+/g, " "),
-      telefone: g(C.tel),
+      nome: nomePadrao(g(C.nome)),
+      telefone: telefonePadrao(g(C.tel)),
       email: g(C.email).toLowerCase(),
       instituicao: g(C.inst).toUpperCase(),
       curso: g(C.curso) || "A informar",
