@@ -46,6 +46,7 @@ export function FormCadastro({ instituicoes }: { instituicoes: Instituicao[] }) 
     setErro(null);
     if (!arquivos.cpf) return setErro("Anexe a foto ou o PDF do CPF.");
     if (!arquivos.comprovante) return setErro("Anexe o comprovante da instituição (declaração ou comprovante de matrícula).");
+    if (!arquivos.residencia) return setErro("Anexe o comprovante de residência.");
     const fd = new FormData(e.currentTarget);
     const dados: DadosCadastro = {
       nome: String(fd.get("nome") ?? ""),
@@ -144,8 +145,8 @@ export function FormCadastro({ instituicoes }: { instituicoes: Instituicao[] }) 
             <Entrada inputMode="tel" placeholder="(22) 99999-9999" value={telefone} onChange={(e) => setTelefone(mascaraTelefone(e.target.value))} required />
           </Campo>
         </div>
-        <Campo rotulo="E-mail (opcional)" ajuda="Serve para recuperar a senha.">
-          <Entrada name="email" type="email" autoComplete="email" />
+        <Campo rotulo="E-mail" ajuda="Serve para recuperar a senha.">
+          <Entrada name="email" type="email" autoComplete="email" required />
         </Campo>
         <div className="grid gap-3 sm:grid-cols-[2fr_1fr]">
           <Campo rotulo="Endereço">
@@ -226,6 +227,13 @@ export function FormCadastro({ instituicoes }: { instituicoes: Instituicao[] }) 
           obrigatorio
         >
           <Anexo campo="comprovante" arquivo={arquivos.comprovante} aoEscolher={escolher} rotulo="Anexar comprovante" aceita="image/*,application/pdf" />
+        </ItemDocumento>
+        <ItemDocumento
+          titulo="Comprovante de residência"
+          texto="Conta de luz, água, telefone ou internet recente, no seu nome ou de alguém da família (PDF ou foto)."
+          obrigatorio
+        >
+          <Anexo campo="residencia" arquivo={arquivos.residencia} aoEscolher={escolher} rotulo="Anexar comprovante" aceita="image/*,application/pdf" />
         </ItemDocumento>
         <ItemDocumento titulo="Foto do rosto" texto="Foto recente, de frente (ajuda o motorista a conferir o embarque).">
           <Anexo campo="foto" arquivo={arquivos.foto} aoEscolher={escolher} rotulo="Anexar foto" aceita="image/*" />

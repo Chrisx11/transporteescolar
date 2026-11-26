@@ -28,6 +28,7 @@ type Pedido = {
   turno: keyof typeof TURNOS;
   cpf_path: string;
   comprovante_path: string;
+  residencia_path: string | null;
   foto_path: string | null;
   status: "pendente" | "aprovado" | "recusado";
   motivo: string | null;
@@ -61,7 +62,7 @@ export default async function PaginaPreCadastros({ searchParams }: { searchParam
   const lista = (data ?? []) as unknown as Pedido[];
 
   // Links assinados (1 hora) para ver os documentos dos pedidos pendentes.
-  const caminhos = aba === "pendente" ? lista.flatMap((p) => [p.cpf_path, p.comprovante_path, p.foto_path].filter((x): x is string => !!x)) : [];
+  const caminhos = aba === "pendente" ? lista.flatMap((p) => [p.cpf_path, p.comprovante_path, p.residencia_path, p.foto_path].filter((x): x is string => !!x)) : [];
   const links: Record<string, string> = {};
   if (caminhos.length) {
     const { data: assinados } = await supabase.storage.from("documentos").createSignedUrls(caminhos, 3600);
@@ -128,6 +129,7 @@ export default async function PaginaPreCadastros({ searchParams }: { searchParam
                     <div className="flex flex-wrap gap-2 sm:col-span-2">
                       <LinkDocumento href={links[p.cpf_path]} rotulo="Documento do CPF" />
                       <LinkDocumento href={links[p.comprovante_path]} rotulo="Comprovante da instituição" />
+                      {p.residencia_path && <LinkDocumento href={links[p.residencia_path]} rotulo="Comprovante de residência" />}
                       {p.foto_path && <LinkDocumento href={links[p.foto_path]} rotulo="Foto" />}
                     </div>
                   )}

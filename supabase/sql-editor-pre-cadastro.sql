@@ -1,5 +1,6 @@
 -- Cole no SQL Editor do Supabase e rode. Pode rodar mais de uma vez.
--- Pré-cadastro do aluno (formulário público /cadastro + análise da SEMEDUC).
+-- Pré-cadastro do aluno (formulário público /cadastro + análise da SEMEDUC)
+-- e comprovante de residência.
 
 -- =====================================================================
 -- Pré-cadastro do aluno (seção 7.1): quem ainda não tem acesso preenche um
@@ -54,5 +55,10 @@ create policy pre_cadastros_alterar on public.pre_cadastros for update
 drop trigger if exists pre_cadastros_auditoria on public.pre_cadastros;
 create trigger pre_cadastros_auditoria after insert or update or delete on public.pre_cadastros
   for each row execute function public.registrar_auditoria();
+
+-- Comprovante de residência no pré-cadastro e no cadastro do aluno.
+alter table public.pre_cadastros add column if not exists residencia_path text;
+alter table public.alunos add column if not exists residencia_path text;
+comment on column public.alunos.residencia_path is 'Comprovante de residência (bucket documentos, pasta <aluno_id>/).';
 
 notify pgrst, 'reload schema';

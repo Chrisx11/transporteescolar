@@ -11,7 +11,7 @@ import { cpfAceito, limparCpf } from "@/lib/cpf";
  * Vercel, que limita o tamanho). Depois o pedido é gravado pela chave de serviço.
  */
 
-export type Campo = "cpf" | "comprovante" | "foto";
+export type Campo = "cpf" | "comprovante" | "residencia" | "foto";
 export type Envio = { campo: Campo; path: string; token: string };
 type Resposta<T> = ({ ok: true } & T) | { ok: false; erro: string };
 
@@ -39,7 +39,7 @@ export async function iniciarEnvio(
     const id = randomUUID();
     const envios: Envio[] = [];
     for (const a of arquivos) {
-      if (!["cpf", "comprovante", "foto"].includes(a.campo)) return { ok: false, erro: "Arquivo inválido." };
+      if (!["cpf", "comprovante", "residencia", "foto"].includes(a.campo)) return { ok: false, erro: "Arquivo inválido." };
       const ext = TIPOS[a.tipo];
       if (!ext || (a.campo === "foto" && ext === "pdf")) {
         return { ok: false, erro: a.campo === "foto" ? "A foto precisa ser JPG, PNG ou WEBP." : "Envie PDF ou foto (JPG, PNG ou WEBP)." };
@@ -82,6 +82,7 @@ export async function concluirCadastro(id: string, d: DadosCadastro): Promise<Re
     if (!texto(d.nome) || texto(d.nome).split(/\s+/).length < 2) return { ok: false, erro: "Escreva o nome completo." };
     if (!cpfAceito(cpf)) return { ok: false, erro: "CPF inválido. Confira os números." };
     if (texto(d.telefone).replace(/\D/g, "").length < 10) return { ok: false, erro: "Informe o WhatsApp com DDD." };
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(texto(d.email))) return { ok: false, erro: "Informe um e-mail válido." };
     if (!["campos", "itaperuna"].includes(d.cidade)) return { ok: false, erro: "Escolha a cidade da faculdade." };
     if (!texto(d.instituicao_id) && !texto(d.instituicao_outra)) return { ok: false, erro: "Escolha ou escreva a instituição." };
     if (!texto(d.curso)) return { ok: false, erro: "Informe o curso." };
@@ -101,9 +102,11 @@ export async function concluirCadastro(id: string, d: DadosCadastro): Promise<Re
     const achar = (campo: Campo) => nomes.find((n) => n.startsWith(`${campo}.`));
     const cpfArq = achar("cpf");
     const compArq = achar("comprovante");
+    const residArq = achar("residencia");
     const fotoArq = achar("foto");
     if (!cpfArq) return { ok: false, erro: "Envie o arquivo do CPF." };
     if (!compArq) return { ok: false, erro: "Envie o comprovante da instituição." };
+    if (!residArq) return { ok: false, erro: "Envie o comprovante de residência." };
 
     const { error } = await admin.from("pre_cadastros").insert({
       id,
@@ -111,7 +114,7 @@ export async function concluirCadastro(id: string, d: DadosCadastro): Promise<Re
       cpf,
       data_nascimento: texto(d.data_nascimento) || null,
       telefone: texto(d.telefone),
-      email: texto(d.email).toLowerCase() || null,
+      email: texto(d.email).toLowerCase(),
       endereco: texto(d.endereco) || null,
       bairro: texto(d.bairro) || null,
       cidade: d.cidade,
@@ -122,6 +125,7 @@ export async function concluirCadastro(id: string, d: DadosCadastro): Promise<Re
       turno: d.turno,
       cpf_path: `${PASTA}/${id}/${cpfArq}`,
       comprovante_path: `${PASTA}/${id}/${compArq}`,
+      residencia_path: `${PASTA}/${id}/${residArq}`,
       foto_path: fotoArq ? `${PASTA}/${id}/${fotoArq}` : null,
       ip: await ipDoPedido(),
     });

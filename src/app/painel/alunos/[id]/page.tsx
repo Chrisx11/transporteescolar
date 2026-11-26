@@ -58,9 +58,10 @@ export default async function PaginaAluno({ params }: { params: Promise<{ id: st
   ]);
   if (!usuario || !aluno) notFound();
 
-  const [foto, comprovante] = await Promise.all([
+  const [foto, comprovante, residencia] = await Promise.all([
     aluno.foto_path ? supabase.storage.from("fotos").createSignedUrl(aluno.foto_path, 3600) : null,
     aluno.comprovante_path ? supabase.storage.from("documentos").createSignedUrl(aluno.comprovante_path, 3600) : null,
+    aluno.residencia_path ? supabase.storage.from("documentos").createSignedUrl(aluno.residencia_path, 3600) : null,
   ]);
 
   const rotas: Rota[] = ((viagens ?? []) as Viagem[])
@@ -145,13 +146,20 @@ export default async function PaginaAluno({ params }: { params: Promise<{ id: st
                 ) : (
                   <div className="flex h-28 w-24 items-center justify-center rounded-lg bg-slate-100 text-xs text-slate-500">sem foto</div>
                 )}
-                <div className="text-sm">
+                <div className="flex flex-col gap-1.5 text-sm">
                   {comprovante?.data?.signedUrl ? (
                     <a href={comprovante.data.signedUrl} target="_blank" rel="noreferrer" className="text-azul-700 hover:underline">
-                      Abrir comprovante
+                      Abrir comprovante de matrícula
                     </a>
                   ) : (
-                    <span className="text-slate-500">Sem comprovante</span>
+                    <span className="text-slate-500">Sem comprovante de matrícula</span>
+                  )}
+                  {residencia?.data?.signedUrl ? (
+                    <a href={residencia.data.signedUrl} target="_blank" rel="noreferrer" className="text-azul-700 hover:underline">
+                      Abrir comprovante de residência
+                    </a>
+                  ) : (
+                    <span className="text-slate-500">Sem comprovante de residência</span>
                   )}
                 </div>
               </div>

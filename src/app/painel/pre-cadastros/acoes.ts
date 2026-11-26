@@ -31,8 +31,10 @@ export async function aprovarPreCadastro(_: Estado, fd: FormData): Promise<Estad
     const ext = (path: string) => path.split(".").pop();
     const comprovante = `${novo.id}/comprovante-${Date.now()}.${ext(p.comprovante_path)}`;
     const foto = p.foto_path ? `${novo.id}/foto-${Date.now()}.${ext(p.foto_path)}` : null;
+    const residencia = p.residencia_path ? `${novo.id}/residencia-${Date.now()}.${ext(p.residencia_path)}` : null;
     try {
       await copiar(p.comprovante_path, "documentos", comprovante);
+      if (residencia) await copiar(p.residencia_path, "documentos", residencia);
       if (foto) await copiar(p.foto_path, "fotos", foto);
       const { error: e1 } = await supabase.from("alunos").insert({
         usuario_id: novo.id,
@@ -42,6 +44,7 @@ export async function aprovarPreCadastro(_: Estado, fd: FormData): Promise<Estad
         endereco: p.endereco,
         bairro: p.bairro,
         comprovante_path: comprovante,
+        residencia_path: residencia,
         foto_path: foto,
       });
       if (e1) throw e1;
@@ -77,7 +80,7 @@ export async function recusarPreCadastro(_: Estado, fd: FormData): Promise<Estad
     const id = campoObrigatorio(fd, "id", "id");
     const motivo = campoObrigatorio(fd, "motivo", "Motivo");
     const supabase = await criarClienteServidor();
-    const { data: p, error } = await supabase.from("pre_cadastros").select("status, cpf_path, comprovante_path, foto_path").eq("id", id).single();
+    const { data: p, error } = await supabase.from("pre_cadastros").select("status, cpf_path, comprovante_path, residencia_path, foto_path").eq("id", id).single();
     if (error) throw error;
     if (p.status !== "pendente") throw new ErroValidacao("Este cadastro já foi analisado.");
     const { error: e1 } = await supabase
@@ -87,7 +90,7 @@ export async function recusarPreCadastro(_: Estado, fd: FormData): Promise<Estad
     if (e1) throw e1;
     await criarClienteAdmin()
       .storage.from("documentos")
-      .remove([p.cpf_path, p.comprovante_path, p.foto_path].filter((x): x is string => !!x));
+      .remove([p.cpf_path, p.comprovante_path, p.residencia_path, p.foto_path].filter((x): x is string => !!x));
     revalidatePath("/painel/pre-cadastros");
     return { ok: "Cadastro recusado." };
   });
