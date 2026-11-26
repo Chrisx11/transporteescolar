@@ -127,7 +127,7 @@ export async function gerarLinkPedido(id: string): Promise<{ ok: true; link: str
       .eq("status", "aguardando")
       .select("id");
     if (error || !data?.length) return { ok: false, erro: "Não foi possível gerar o link (o pedido não está aguardando complemento)." };
-    return { ok: true, link: linkCompletar(c.codigo) };
+    return { ok: true, link: await linkCompletar(c.codigo) };
   } catch (e) {
     return { ok: false, erro: (e as Error).message };
   }
@@ -143,7 +143,7 @@ async function enviarLinks(pedidos: Aguardando[]) {
   for (const p of comEmail) {
     const c = novoCodigo();
     const { error } = await supabase.from("pre_cadastros").update({ codigo_hash: c.hash, codigo_expira_em: c.expiraEm }).eq("id", p.id);
-    if (!error) preparados.push({ p, link: linkCompletar(c.codigo) });
+    if (!error) preparados.push({ p, link: await linkCompletar(c.codigo) });
   }
   const resultados = await enviarEmails(preparados.map(({ p, link }) => emailCompletarPedido(p.nome, p.email!, link, DIAS_VALIDADE_LINK)));
   let enviados = 0;

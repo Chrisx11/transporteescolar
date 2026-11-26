@@ -1,22 +1,20 @@
 import type { Metadata } from "next";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 import { notFound } from "next/navigation";
-import { headers } from "next/headers";
 import QRCode from "qrcode";
 import { exigirPerfil } from "@/lib/auth";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { AcaoRapida } from "@/components/formulario";
 import { BotaoLink } from "@/components/ui";
 import { BotaoImprimir } from "./botao-imprimir";
+import { urlDoSite } from "@/lib/codigo-link";
 import { regenerarQr } from "../../acoes";
 
 export const metadata: Metadata = { title: "Adesivo do QR" };
 
-/** Endereço público do app (o link gravado no QR). */
+/** Endereço público do app (o link gravado no QR): o mesmo do painel que está sendo usado. */
 async function origemApp() {
-  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
-  const h = await headers();
-  return `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host")}`;
+  return urlDoSite();
 }
 
 export default async function PaginaAdesivo({ params }: { params: Promise<{ id: string }> }) {
