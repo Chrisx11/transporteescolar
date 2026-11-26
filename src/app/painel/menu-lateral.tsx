@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { CarregandoLink } from "@/components/carregando-link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
@@ -41,6 +42,7 @@ function LinkMenu({ item, recolhido, aoNavegar }: { item: ItemMenu; recolhido: b
       )}
       <Icone className={cx("size-[18px] shrink-0", eh ? "text-destaque-400" : "text-azul-200/60 group-hover/item:text-azul-100")} />
       {!recolhido && <span className="truncate">{item.rotulo}</span>}
+      {!recolhido && <CarregandoLink />}
       {recolhido && (
         <span
           role="tooltip"

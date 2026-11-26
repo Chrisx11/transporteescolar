@@ -12,6 +12,7 @@ import { AcaoRapida } from "@/components/formulario";
 import { emailConfigurado } from "@/lib/email";
 import { aprovarPreCadastro, enviarLinkPedido, enviarLinksNaoEnviados, recusarPreCadastro } from "./acoes";
 import { CopiarLink } from "./copiar-link";
+import { CarregandoLink } from "@/components/carregando-link";
 
 export const metadata: Metadata = { title: "Pedidos de passe" };
 
@@ -133,6 +134,7 @@ export default async function PaginaPedidosPasse({ searchParams }: { searchParam
             )}
           >
             {a.rotulo}
+            <CarregandoLink />
             {a.chave === "pendente" && (pendentes ?? 0) > 0 && (
               <span className="ml-1.5 rounded-full bg-amber-500 px-1.5 text-xs font-bold text-white">{pendentes}</span>
             )}

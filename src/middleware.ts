@@ -11,7 +11,7 @@ const ROTAS_PUBLICAS = [
 function loginDa(caminho: string): string {
   if (caminho.startsWith("/app/motorista")) return "/motorista";
   if (caminho.startsWith("/app") || caminho.startsWith("/embarque")) return "/aluno";
-  if (/^\/painel\/(alunos|instituicoes|calendario)/.test(caminho)) return "/semeduc";
+  if (/^\/painel\/(alunos|instituicoes|calendario|pedidos-passe)/.test(caminho)) return "/semeduc";
   if (/^\/painel\/(usuarios|parametros)/.test(caminho)) return "/admin";
   if (caminho.startsWith("/painel")) return "/semtransp";
   return "/aluno";
