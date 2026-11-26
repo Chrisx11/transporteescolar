@@ -10,6 +10,7 @@ import {
   School,
   SlidersHorizontal,
   UserCog,
+  UserRoundPlus,
   UsersRound,
   type LucideIcon,
 } from "lucide-react";
@@ -38,6 +39,7 @@ export const MENU: GrupoMenu[] = [
     perfis: ["semeduc", "admin"],
     itens: [
       { href: "/painel/alunos", rotulo: "Alunos", icone: GraduationCap },
+      { href: "/painel/pre-cadastros", rotulo: "Pré-cadastros", icone: UserRoundPlus },
       { href: "/painel/instituicoes", rotulo: "Instituições", icone: School },
       { href: "/painel/calendario", rotulo: "Feriados e recessos", icone: CalendarDays },
     ],
@@ -64,6 +66,7 @@ const ROTULOS: Record<string, string> = {
   escala: "Escala semanal",
   alunos: "Alunos",
   novo: "Novo aluno",
+  "pre-cadastros": "Pré-cadastros",
   instituicoes: "Instituições",
   calendario: "Feriados e recessos",
   usuarios: "Usuários",

@@ -108,6 +108,14 @@ export function FormLogin({ area }: { area: Perfil }) {
       <Link href="/esqueci-senha" className="text-center text-sm font-medium text-azul-700 hover:underline">
         Esqueci minha senha
       </Link>
+      {area === "aluno" && (
+        <p className="border-t border-slate-100 pt-4 text-center text-sm text-slate-600">
+          Ainda não tem acesso?{" "}
+          <Link href="/cadastro" className="font-semibold text-azul-700 hover:underline">
+            Faça seu cadastro
+          </Link>
+        </p>
+      )}
     </form>
   );
 }
