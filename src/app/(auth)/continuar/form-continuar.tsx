@@ -6,16 +6,36 @@ import { useState } from "react";
 import { ArrowRight, ClipboardList, Loader2, Search } from "lucide-react";
 import { Aviso, Botao, Campo, Entrada } from "@/components/ui";
 import { buscarPedido } from "./acoes";
+import { mascaraTelefone } from "../cadastro/form-cadastro";
+
+/** Só números e sinais de telefone → é telefone; qualquer letra ou @ → é e-mail. */
+const pareceTelefone = (v: string) => v.trim() !== "" && /^[\d\s()+-]+$/.test(v);
+const emailValido = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
 export function FormContinuar() {
   const router = useRouter();
   const [valor, setValor] = useState("");
   const [buscando, setBuscando] = useState(false);
   const [erro, setErro] = useState<{ texto: string; dica?: "cadastro" | "primeiro-acesso" } | null>(null);
+  const tipo = !valor.trim() ? null : pareceTelefone(valor) ? "telefone" : "email";
+
+  function mudar(v: string) {
+    setErro(null);
+    // Telefone: formata enquanto digita, (22) 99999-9999. E-mail: deixa como está, sem espaços.
+    setValor(pareceTelefone(v) ? mascaraTelefone(v) : v.replace(/\s/g, ""));
+  }
 
   async function buscar(e: React.FormEvent) {
     e.preventDefault();
     setErro(null);
+    if (tipo === "email" && !emailValido(valor)) {
+      setErro({ texto: valor.includes("@") ? "Confira o e-mail: está incompleto (ex.: nome@gmail.com)." : "Falta o @ no e-mail (ex.: nome@gmail.com)." });
+      return;
+    }
+    if (tipo === "telefone" && valor.replace(/\D/g, "").length < 10) {
+      setErro({ texto: "Digite o telefone com DDD, por exemplo (22) 99999-9999." });
+      return;
+    }
     setBuscando(true);
     const r = await buscarPedido(valor);
     if (r.ok) {
@@ -43,13 +63,26 @@ export function FormContinuar() {
           <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
           <Entrada
             value={valor}
-            onChange={(e) => setValor(e.target.value)}
+            onChange={(e) => mudar(e.target.value)}
             placeholder="seu@email.com ou (22) 99999-9999"
             autoComplete="email"
+            autoCapitalize="none"
+            spellCheck={false}
             className="h-12 pl-10 text-base"
             required
           />
         </div>
+        {tipo && (
+          <p className="mt-1.5 text-xs text-slate-500">
+            {tipo === "telefone" ? (
+              "Buscando pelo telefone."
+            ) : emailValido(valor) ? (
+              "Buscando pelo e-mail."
+            ) : (
+              <span className="text-amber-700">{valor.includes("@") ? "E-mail incompleto." : "Para buscar pelo e-mail, digite com @."}</span>
+            )}
+          </p>
+        )}
       </Campo>
 
       {erro && (
