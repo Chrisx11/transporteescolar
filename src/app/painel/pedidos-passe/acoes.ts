@@ -114,8 +114,39 @@ export async function recusarPreCadastro(_: Estado, fd: FormData): Promise<Estad
 // Pedidos "aguardando complemento" (importados das planilhas): link individual
 // ---------------------------------------------------------------------
 
-/** Gera um link novo para o pedido (o anterior deixa de valer) e o devolve para copiar. */
-export async function gerarLinkPedido(id: string): Promise<{ ok: true; link: string } | { ok: false; erro: string }> {
+/** "CHRISTIAN NUNES" → "Christian" */
+function primeiroNome(nome: string) {
+  const p = (nome ?? "").trim().split(/\s+/)[0] ?? "";
+  return p.charAt(0).toLocaleUpperCase("pt-BR") + p.slice(1).toLocaleLowerCase("pt-BR");
+}
+
+/** Mensagem pronta para o WhatsApp, com o nome do aluno e o link individual. */
+function mensagemWhatsApp(nome: string, link: string) {
+  return [
+    `Olá, ${primeiroNome(nome)}! Tudo bem?`,
+    "",
+    "Aqui é da *Secretaria Municipal de Educação de Italva* 🚌",
+    "",
+    `O transporte universitário está com um sistema novo e, para *renovar o seu passe*, você precisa completar seu cadastro pelo link abaixo. Ele é só seu e vale por ${DIAS_VALIDADE_LINK} dias:`,
+    "",
+    link,
+    "",
+    "Tenha em mãos:",
+    "• o número do seu CPF;",
+    "• foto ou PDF do documento com CPF (CPF, RG ou CNH);",
+    "• comprovante de matrícula 2026;",
+    "• comprovante de residência (luz, água, telefone ou internet).",
+    "",
+    "Depois que a secretaria aprovar, você entra no app com o seu CPF (a primeira senha também é o CPF).",
+    "",
+    "Qualquer dúvida, é só responder esta mensagem.",
+  ].join("\n");
+}
+
+/** Gera um link novo para o pedido (o anterior deixa de valer) e devolve a mensagem pronta para o WhatsApp. */
+export async function gerarLinkPedido(
+  id: string,
+): Promise<{ ok: true; link: string; mensagem: string; telefone: string | null } | { ok: false; erro: string }> {
   try {
     await sessaoComPerfil("semeduc");
     const supabase = await criarClienteServidor();
@@ -125,9 +156,10 @@ export async function gerarLinkPedido(id: string): Promise<{ ok: true; link: str
       .update({ codigo_hash: c.hash, codigo_expira_em: c.expiraEm })
       .eq("id", id)
       .eq("status", "aguardando")
-      .select("id");
+      .select("id, nome, telefone");
     if (error || !data?.length) return { ok: false, erro: "Não foi possível gerar o link (o pedido não está aguardando complemento)." };
-    return { ok: true, link: await linkCompletar(c.codigo) };
+    const link = await linkCompletar(c.codigo);
+    return { ok: true, link, mensagem: mensagemWhatsApp(data[0].nome, link), telefone: data[0].telefone };
   } catch (e) {
     return { ok: false, erro: (e as Error).message };
   }

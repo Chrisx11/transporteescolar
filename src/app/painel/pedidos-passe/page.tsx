@@ -235,7 +235,7 @@ function ListaAguardando({ lista, naoEnviados, emailPronto }: { lista: Pedido[];
           anexar os documentos. Quando completar, o pedido passa para <strong>Esperando análise</strong>.
           {!emailPronto && (
             <p className="mt-2 font-medium text-amber-700">
-              O envio de e-mail ainda não está configurado. Por enquanto use “Copiar link” e mande pelo WhatsApp.
+              O envio de e-mail ainda não está configurado. Por enquanto use “WhatsApp” (abre a conversa com a mensagem pronta) ou “Copiar mensagem”.
             </p>
           )}
         </div>
