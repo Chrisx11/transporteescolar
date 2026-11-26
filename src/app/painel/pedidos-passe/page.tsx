@@ -150,6 +150,9 @@ export default async function PaginaPedidosPasse({ searchParams }: { searchParam
                       <Campo rotulo="Matrícula válida até" ajuda="Conforme o comprovante enviado.">
                         <Entrada name="matricula_validade" type="date" defaultValue={fimSemestre} required />
                       </Campo>
+                      <Campo rotulo="E-mail do aluno" ajuda="Corrija se estiver errado ou se já for usado por outro login.">
+                        <Entrada name="email" type="email" defaultValue={p.email ?? ""} required />
+                      </Campo>
                       <BotaoEnviar className="bg-emerald-600 hover:bg-emerald-700">
                         <CheckCircle2 /> Aprovar e criar acesso
                       </BotaoEnviar>

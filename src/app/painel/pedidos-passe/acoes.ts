@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { sessaoComPerfil } from "@/lib/auth";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { criarClienteAdmin } from "@/lib/supabase/admin";
-import { campoObrigatorio, ErroValidacao, executar, type Estado } from "@/lib/acoes";
+import { campo, campoObrigatorio, ErroValidacao, executar, type Estado } from "@/lib/acoes";
 import { criarUsuario } from "@/lib/usuarios";
 
 /** Copia um arquivo do pedido para a pasta do aluno (bucket de destino pode ser outro). */
@@ -27,7 +27,18 @@ export async function aprovarPreCadastro(_: Estado, fd: FormData): Promise<Estad
     if (error) throw error;
     if (p.status !== "pendente") throw new ErroValidacao("Este cadastro já foi analisado.");
 
-    const novo = await criarUsuario({ nome: p.nome, cpf: p.cpf, email: p.email, telefone: p.telefone, perfil: "aluno", senhaInicial: "cpf" });
+    // A Educação pode corrigir o e-mail antes de aprovar (ex.: e-mail já usado por outro login).
+    const email = (campo(fd, "email") ?? p.email ?? "").trim().toLowerCase() || null;
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new ErroValidacao("E-mail inválido.");
+    if (email) {
+      const { data: emUso } = await criarClienteAdmin().from("usuarios").select("id").eq("email", email).maybeSingle();
+      if (emUso) {
+        throw new ErroValidacao("Este e-mail já é usado por outro login. Troque o e-mail do aluno no campo acima e aprove de novo.");
+      }
+    }
+    if (email !== p.email) await supabase.from("pre_cadastros").update({ email }).eq("id", id);
+
+    const novo = await criarUsuario({ nome: p.nome, cpf: p.cpf, email, telefone: p.telefone, perfil: "aluno", senhaInicial: "cpf" });
     const ext = (path: string) => path.split(".").pop();
     const comprovante = `${novo.id}/comprovante-${Date.now()}.${ext(p.comprovante_path)}`;
     const foto = p.foto_path ? `${novo.id}/foto-${Date.now()}.${ext(p.foto_path)}` : null;
