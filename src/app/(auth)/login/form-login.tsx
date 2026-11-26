@@ -1,19 +1,24 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { ArrowLeft, Eye, EyeOff, IdCard, Loader2, LockKeyhole, LogIn } from "lucide-react";
+import { Eye, EyeOff, IdCard, Loader2, LockKeyhole, LogIn } from "lucide-react";
 import { Aviso, Botao, Campo, Entrada, cx } from "@/components/ui";
 import { VISUAL_PERFIL } from "@/components/perfis-visual";
 import { mascaraCpf } from "@/lib/mascaras";
 import { AREAS_LOGIN, type Perfil } from "@/lib/rotulos";
 
-export function FormLogin({ area, voltar }: { area: Perfil; voltar?: string }) {
+export function FormLogin({ area }: { area: Perfil }) {
+  const busca = useSearchParams();
+  const pedido = busca.get("voltar");
+  const voltar = pedido?.startsWith("/") && !pedido.startsWith("//") ? pedido : undefined;
   const [cpf, setCpf] = useState("");
   const [senha, setSenha] = useState("");
   const [verSenha, setVerSenha] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const router = useRouter();
   const info = AREAS_LOGIN[area];
   const { icone: Icone, gradiente } = VISUAL_PERFIL[area];
 
@@ -34,7 +39,9 @@ export function FormLogin({ area, voltar }: { area: Perfil; voltar?: string }) {
         return;
       }
       const destino = corpo.destino === "/trocar-senha" || !voltar ? corpo.destino : voltar;
-      window.location.assign(destino);
+      // Navega sem recarregar o site inteiro (os arquivos já baixados são reaproveitados).
+      router.replace(destino);
+      router.refresh();
     } catch {
       setErro("Sem conexão. Verifique a internet e tente de novo.");
       setEnviando(false);
@@ -43,13 +50,8 @@ export function FormLogin({ area, voltar }: { area: Perfil; voltar?: string }) {
 
   return (
     <form onSubmit={entrar} className="flex flex-col gap-5">
-      <Link
-        href="/login"
-        className="-ml-1 inline-flex w-fit items-center gap-1.5 rounded-lg px-1 text-sm font-medium text-slate-500 transition-colors hover:text-slate-900"
-      >
-        <ArrowLeft className="size-4" /> Outro acesso
-      </Link>
-
+      {busca.get("erro") === "link" && <Aviso>O link expirou ou já foi usado. Peça um novo.</Aviso>}
+      {busca.get("senha") === "redefinida" && <Aviso tipo="ok">Senha alterada. Entre com a nova senha.</Aviso>}
       <div className="flex items-center gap-4">
         <span className={cx("flex size-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-lg", gradiente)}>
           <Icone className="size-7" />

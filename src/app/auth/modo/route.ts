@@ -6,7 +6,7 @@ import { inicioDoPerfil } from "@/lib/rotulos";
 /** Admin troca a área que está vendo: /auth/modo?para=aluno|motorista|semeduc|semtransp|admin */
 export async function GET(req: NextRequest) {
   const sessao = await obterSessao();
-  if (!sessao?.admin) return NextResponse.redirect(new URL("/login", req.url));
+  if (!sessao?.admin) return NextResponse.redirect(new URL("/admin", req.url));
   const para = req.nextUrl.searchParams.get("para");
   const jar = await cookies();
   if (ehModoAdmin(para)) jar.set(COOKIE_MODO_ADMIN, para, { path: "/", httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production" });

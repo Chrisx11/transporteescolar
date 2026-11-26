@@ -9,6 +9,6 @@ export async function POST(req: NextRequest) {
   const supabase = await criarClienteServidor();
   await supabase.auth.signOut();
   (await cookies()).delete(COOKIE_MODO_ADMIN);
-  const destino = sessao ? `/login/${sessao.perfil}` : "/login";
+  const destino = sessao ? (sessao.admin ? "/admin" : `/${sessao.perfil}`) : "/aluno";
   return NextResponse.redirect(new URL(destino, req.url), { status: 303 });
 }

@@ -1,10 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { cookies } from "next/headers";
-import { COOKIE_MODO_ADMIN, ehModoAdmin } from "@/lib/auth";
+import { COOKIE_MODO_ADMIN } from "@/lib/auth";
 import { criarClienteAdmin } from "@/lib/supabase/admin";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { cpfAceito, limparCpf } from "@/lib/cpf";
-import { AREAS_LOGIN, ehPerfil, inicioDoPerfil, type Perfil } from "@/lib/rotulos";
+import { AREAS_LOGIN, ehPerfil, emailInterno, inicioDoPerfil, type Perfil } from "@/lib/rotulos";
 
 const JANELA_MIN = 15;
 const MAX_FALHAS_CPF = 5;
@@ -34,13 +34,15 @@ export async function POST(req: NextRequest) {
   const admin = criarClienteAdmin();
   const desde = new Date(Date.now() - JANELA_MIN * 60_000).toISOString();
 
-  const [{ count: falhasCpf }, { count: falhasIp }] = await Promise.all([
+  // Em paralelo: tentativas recentes (bloqueio) e o cadastro do CPF.
+  const [{ count: falhasCpf }, { count: falhasIp }, { data: usuario }] = await Promise.all([
     admin.from("tentativas_login").select("id", { count: "exact", head: true })
       .eq("cpf", cpf).eq("sucesso", false).gte("criado_em", desde),
     ip
       ? admin.from("tentativas_login").select("id", { count: "exact", head: true })
           .eq("ip", ip).eq("sucesso", false).gte("criado_em", desde)
       : Promise.resolve({ count: 0 }),
+    admin.from("usuarios").select("id, email, perfil, ativo, troca_senha_obrigatoria").eq("cpf", cpf).maybeSingle(),
   ]);
   if ((falhasCpf ?? 0) >= MAX_FALHAS_CPF || (falhasIp ?? 0) >= MAX_FALHAS_IP) {
     return NextResponse.json(
@@ -52,57 +54,43 @@ export async function POST(req: NextRequest) {
   const registrar = (sucesso: boolean) =>
     admin.from("tentativas_login").insert({ cpf, ip, sucesso });
 
-  const { data: usuario } = await admin
-    .from("usuarios")
-    .select("id, perfil, ativo, troca_senha_obrigatoria")
-    .eq("cpf", cpf)
-    .maybeSingle();
-
   if (!usuario || !usuario.ativo) {
     await registrar(false);
     return NextResponse.json({ erro: ERRO_GENERICO }, { status: 401 });
   }
 
-  const { data: authUser } = await admin.auth.admin.getUserById(usuario.id);
-  const email = authUser.user?.email;
-  if (!email) {
-    await registrar(false);
-    return NextResponse.json({ erro: ERRO_GENERICO }, { status: 401 });
-  }
-
+  // O e-mail de login é o cadastrado ou o interno <cpf>@login.italva.invalid (decisão 16.2).
+  // Só se não bater, consulta o Supabase Auth (evita uma ida ao servidor na maioria dos logins).
   const supabase = await criarClienteServidor();
-  const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
+  let { error } = await supabase.auth.signInWithPassword({ email: usuario.email ?? emailInterno(cpf), password: senha });
+  if (error) {
+    const { data: authUser } = await admin.auth.admin.getUserById(usuario.id);
+    const email = authUser.user?.email;
+    if (email && email !== (usuario.email ?? emailInterno(cpf))) {
+      ({ error } = await supabase.auth.signInWithPassword({ email, password: senha }));
+    }
+  }
   if (error) {
     await registrar(false);
     return NextResponse.json({ erro: ERRO_GENERICO }, { status: 401 });
   }
   await registrar(true);
 
-  // Cada página de login aceita só o próprio perfil. Esta checagem vem depois da
-  // senha conferida, para não revelar a quem pertence um CPF.
-  // O Admin entra por qualquer página de login e vê só aquela área.
-  if (usuario.perfil !== area && usuario.perfil !== "admin") {
+  // Cada página de login aceita só o próprio perfil (o Admin só pela /admin).
+  // Esta checagem vem depois da senha conferida, para não revelar a quem pertence um CPF.
+  if (usuario.perfil !== area) {
     await supabase.auth.signOut();
-    const certa = AREAS_LOGIN[usuario.perfil as Perfil];
+    const certa = usuario.perfil as Perfil;
     return NextResponse.json(
       {
-        erro: `Este CPF não tem acesso como ${AREAS_LOGIN[area].titulo}. Entre pela página "${certa.titulo}".`,
+        erro: `Este CPF não tem acesso como ${AREAS_LOGIN[area].titulo}. Entre pela página de ${AREAS_LOGIN[certa].titulo} (endereço /${certa}).`,
       },
       { status: 403 },
     );
   }
 
-  // Admin: a página de login escolhida define a área (Admin completo, SEMEDUC, SEMTRANSP, aluno ou motorista).
-  let perfilDestino = usuario.perfil as Perfil;
-  if (usuario.perfil === "admin") {
-    const jar = await cookies();
-    if (ehModoAdmin(area)) {
-      jar.set(COOKIE_MODO_ADMIN, area, { path: "/", httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production" });
-      perfilDestino = area;
-    } else {
-      jar.delete(COOKIE_MODO_ADMIN);
-    }
-  }
-  const destino = usuario.troca_senha_obrigatoria ? "/trocar-senha" : inicioDoPerfil(perfilDestino);
+  // Admin entra sempre no painel completo; a faixa "Ver como" troca de área depois.
+  if (usuario.perfil === "admin") (await cookies()).delete(COOKIE_MODO_ADMIN);
+  const destino = usuario.troca_senha_obrigatoria ? "/trocar-senha" : inicioDoPerfil(usuario.perfil as Perfil);
   return NextResponse.json({ destino });
 }

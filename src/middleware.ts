@@ -2,7 +2,20 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 // "/dev": prévias de tela só do servidor local (as páginas dão 404 em produção).
-const ROTAS_PUBLICAS = ["/login", "/esqueci-senha", "/auth", "/offline", "/api/auth/login", "/dev"];
+const ROTAS_PUBLICAS = [
+  "/login", "/aluno", "/motorista", "/semeduc", "/semtransp", "/admin",
+  "/esqueci-senha", "/auth", "/offline", "/api/auth/login", "/dev",
+];
+
+/** Login de cada área do site (quem não está logado volta para o login certo). */
+function loginDa(caminho: string): string {
+  if (caminho.startsWith("/app/motorista")) return "/motorista";
+  if (caminho.startsWith("/app") || caminho.startsWith("/embarque")) return "/aluno";
+  if (/^\/painel\/(alunos|instituicoes|calendario)/.test(caminho)) return "/semeduc";
+  if (/^\/painel\/(usuarios|parametros)/.test(caminho)) return "/admin";
+  if (caminho.startsWith("/painel")) return "/semtransp";
+  return "/aluno";
+}
 
 export async function middleware(request: NextRequest) {
   let resposta = NextResponse.next({ request });
@@ -32,7 +45,7 @@ export async function middleware(request: NextRequest) {
 
   if (!user && !publica) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
+    url.pathname = loginDa(caminho);
     url.search = caminho === "/" ? "" : `?voltar=${encodeURIComponent(caminho)}`;
     return NextResponse.redirect(url);
   }

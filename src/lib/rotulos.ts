@@ -41,7 +41,7 @@ export function inicioDoPerfil(perfil: Perfil): string {
   return "/painel";
 }
 
-/** Páginas de login, uma por perfil: /login/<perfil>. */
+/** Páginas de login, uma por perfil, cada uma no próprio endereço: /<perfil>. */
 export const AREAS_LOGIN: Record<Perfil, { titulo: string; descricao: string; icone: string }> = {
   aluno: { titulo: "Aluno", descricao: "Reservar viagens e confirmar embarque", icone: "🎓" },
   motorista: { titulo: "Motorista", descricao: "Listas de embarque das viagens", icone: "🚌" },

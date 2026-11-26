@@ -40,15 +40,15 @@ export default async function InicioPainel() {
   const veEduc = sessao.perfil !== "semtransp";
   const hoje = hojeSP();
 
-  const [onibus, motoristas, pontos, alunosAtivos, alunosPendentes, instituicoes] = await Promise.all([
+  const [onibus, motoristas, pontos, alunosAtivos, alunosPendentes, instituicoes, doDia] = await Promise.all([
     veTransp ? contar("onibus", ["situacao", "ativo"]) : 0,
     veTransp ? contar("motoristas") : 0,
     veTransp ? contar("pontos", ["ativo", "true"]) : 0,
     veEduc ? contar("alunos", ["situacao", "ativo"]) : 0,
     veEduc ? contar("alunos", ["situacao", "pendente"]) : 0,
     veEduc ? contar("instituicoes", ["ativa", "true"]) : 0,
+    veTransp ? carregarDia(hoje) : Promise.resolve([]),
   ]);
-  const doDia = veTransp ? await carregarDia(hoje) : [];
   const resumo = {
     viagens: doDia.filter((v) => v.status !== "cancelada").length,
     reservas: doDia.reduce((s, v) => s + (v.status === "cancelada" ? 0 : v.reservas), 0),
