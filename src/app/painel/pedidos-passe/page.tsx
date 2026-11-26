@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CheckCircle2, ChevronRight, ExternalLink, Mail, MailCheck, Send, UserRoundPlus, XCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Search, ChevronRight, ExternalLink, Mail, MailCheck, Send, UserRoundPlus, XCircle } from "lucide-react";
 import { exigirPerfil } from "@/lib/auth";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { BotaoEnviar, Formulario } from "@/components/formulario";
-import { Campo, Entrada, Selo, Titulo, Vazio, cx } from "@/components/ui";
+import { Botao, BotaoLink, Campo, Entrada, Selo, Titulo, Vazio, cx } from "@/components/ui";
 import { formatarCpf } from "@/lib/cpf";
 import { CIDADES, TURNOS, type Cidade } from "@/lib/rotulos";
 import { dataBR, dataHoraBR } from "@/lib/tempo";
@@ -56,25 +56,54 @@ const ABAS = [
 ] as const;
 
 /** Pedidos de passe: cadastros feitos pelos alunos no formulário público (/cadastro). */
-export default async function PaginaPedidosPasse({ searchParams }: { searchParams: Promise<{ aba?: string }> }) {
+const POR_PAGINA = 50;
+const COLUNAS_BASE = "id, nome, cpf, telefone, email, cidade, instituicao_outra, curso, periodo, turno, status, origem, linha, dias, observacao, criado_em, instituicao:instituicoes(nome)";
+const COLUNAS = {
+  aguardando: "id, nome, telefone, email, cidade, instituicao_outra, curso, linha, dias, email_enviado_em, email_erro, instituicao:instituicoes(nome)",
+  pendente: `${COLUNAS_BASE}, data_nascimento, endereco, bairro, cpf_path, comprovante_path, residencia_path, foto_path`,
+  aprovado: `${COLUNAS_BASE}, aluno_id, analisado_em`,
+  recusado: `${COLUNAS_BASE}, motivo, analisado_em`,
+} as const;
+
+/** Pedidos de passe: cadastros feitos pelos alunos no formulário público (/cadastro). */
+export default async function PaginaPedidosPasse({ searchParams }: { searchParams: Promise<{ aba?: string; q?: string; pagina?: string }> }) {
   await exigirPerfil("semeduc");
-  const pedida = (await searchParams).aba;
+  const { aba: pedida, q = "", pagina = "1" } = await searchParams;
   const aba = ABAS.find((a) => a.chave === pedida)?.chave ?? "pendente";
+  const pag = Math.max(1, Number(pagina) || 1);
+  const termo = q.trim().replace(/[%_,()]/g, "");
   const supabase = await criarClienteServidor();
-  const [{ data }, { count: pendentes }, { count: aguardando }, { count: naoEnviados }] = await Promise.all([
-    aba === "aguardando"
-      ? supabase.from("pre_cadastros").select("*, instituicao:instituicoes(nome)").eq("status", "aguardando").order("nome").limit(1000)
-      : supabase
-          .from("pre_cadastros")
-          .select("*, instituicao:instituicoes(nome)")
-          .eq("status", aba)
-          .order("criado_em", { ascending: aba === "pendente" })
-          .limit(100),
-    supabase.from("pre_cadastros").select("id", { count: "exact", head: true }).eq("status", "pendente"),
-    supabase.from("pre_cadastros").select("id", { count: "exact", head: true }).eq("status", "aguardando"),
-    supabase.from("pre_cadastros").select("id", { count: "exact", head: true }).eq("status", "aguardando").is("email_enviado_em", null),
+
+  // Só as colunas que a aba mostra, 50 por página, com busca por nome, e-mail ou telefone.
+  let consulta = supabase
+    .from("pre_cadastros")
+    .select(COLUNAS[aba] as string, { count: "exact" })
+    .eq("status", aba)
+    .range((pag - 1) * POR_PAGINA, pag * POR_PAGINA - 1);
+  consulta = aba === "aguardando" ? consulta.order("nome") : consulta.order("criado_em", { ascending: aba === "pendente" });
+  if (termo) {
+    const digitos = termo.replace(/D/g, "");
+    const filtros = [`nome.ilike.%${termo}%`, `email.ilike.%${termo}%`];
+    if (digitos.length >= 3) filtros.push(`cpf.like.${digitos}%`);
+    if (digitos.length >= 4) filtros.push(`telefone.ilike.%${digitos.slice(-4)}%`);
+    consulta = consulta.or(filtros.join(","));
+  }
+
+  const contar = (status: string, semEmail = false) => {
+    let c = supabase.from("pre_cadastros").select("id", { count: "exact", head: true }).eq("status", status);
+    if (semEmail) c = c.is("email_enviado_em", null);
+    return c;
+  };
+  const [{ data, count: total }, { count: pendentes }, { count: aguardando }, naoEnviadosR] = await Promise.all([
+    consulta,
+    contar("pendente"),
+    contar("aguardando"),
+    aba === "aguardando" && emailConfigurado() ? contar("aguardando", true) : Promise.resolve({ count: 0 }),
   ]);
+  const naoEnviados = naoEnviadosR.count;
   const lista = (data ?? []) as unknown as Pedido[];
+  const paginas = Math.max(1, Math.ceil((total ?? 0) / POR_PAGINA));
+  const linkPagina = (p: number) => `/painel/pedidos-passe?${new URLSearchParams({ aba, q, pagina: String(p) })}`;
 
   // Links assinados (1 hora) para ver os documentos dos pedidos pendentes.
   const caminhos = aba === "pendente" ? lista.flatMap((p) => [p.cpf_path, p.comprovante_path, p.residencia_path, p.foto_path].filter((x): x is string => !!x)) : [];
@@ -113,6 +142,15 @@ export default async function PaginaPedidosPasse({ searchParams }: { searchParam
           </Link>
         ))}
       </div>
+
+      <form className="mb-4 flex flex-wrap items-center gap-2" action="/painel/pedidos-passe">
+        <input type="hidden" name="aba" value={aba} />
+        <Entrada name="q" defaultValue={q} placeholder="Buscar por nome, CPF, e-mail ou telefone" className="max-w-sm" />
+        <Botao type="submit" variante="secundario">
+          <Search /> Buscar
+        </Botao>
+        <span className="text-sm text-slate-500">{total ?? 0} pedido(s)</span>
+      </form>
 
       {aba === "aguardando" ? (
         <ListaAguardando lista={lista} naoEnviados={naoEnviados ?? 0} emailPronto={emailConfigurado()} />
@@ -196,6 +234,24 @@ export default async function PaginaPedidosPasse({ searchParams }: { searchParam
               </div>
             </details>
           ))}
+        </div>
+      )}
+
+      {paginas > 1 && (
+        <div className="mt-4 flex items-center justify-center gap-3 text-sm">
+          {pag > 1 && (
+            <BotaoLink variante="secundario" href={linkPagina(pag - 1)}>
+              <ArrowLeft /> Anterior
+            </BotaoLink>
+          )}
+          <span>
+            Página {pag} de {paginas}
+          </span>
+          {pag < paginas && (
+            <BotaoLink variante="secundario" href={linkPagina(pag + 1)}>
+              Próxima <ArrowRight />
+            </BotaoLink>
+          )}
         </div>
       )}
     </>
