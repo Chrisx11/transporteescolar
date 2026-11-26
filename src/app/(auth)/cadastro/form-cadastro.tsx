@@ -93,8 +93,8 @@ export function FormCadastro({ instituicoes }: { instituicoes: Instituicao[] }) 
         </span>
         <h1 className="text-2xl font-bold text-slate-900">Cadastro enviado!</h1>
         <p className="text-slate-600">
-          A Secretaria de Educação vai conferir seus documentos. Quando for aprovado, você recebe a senha para entrar no app
-          pelo WhatsApp informado.
+          A Secretaria de Educação vai conferir seus documentos. Quando o pedido for aprovado, entre na página do aluno com
+          o seu CPF. No primeiro acesso, a senha também é o seu CPF, e você cria uma senha nova.
         </p>
         <Link href="/aluno" className="text-sm font-semibold text-azul-700 hover:underline">
           Ir para a página de login

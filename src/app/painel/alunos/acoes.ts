@@ -28,7 +28,7 @@ function contato(fd: FormData) {
 export async function criarAluno(_: Estado, fd: FormData): Promise<Estado> {
   return executar(async () => {
     await sessaoComPerfil("semeduc");
-    const novo = await criarUsuario({ ...contato(fd), cpf: campoObrigatorio(fd, "cpf", "CPF"), perfil: "aluno" });
+    const novo = await criarUsuario({ ...contato(fd), cpf: campoObrigatorio(fd, "cpf", "CPF"), perfil: "aluno", senhaInicial: "cpf" });
     const supabase = await criarClienteServidor();
     const { error } = await supabase
       .from("alunos")
@@ -39,7 +39,7 @@ export async function criarAluno(_: Estado, fd: FormData): Promise<Estado> {
     }
     revalidatePath("/painel/alunos");
     return {
-      ok: `Aluno cadastrado. Senha provisória: ${novo.senha} — anote e entregue ao aluno.`,
+      ok: "Aluno cadastrado. No primeiro acesso, a senha é o próprio CPF (só os números); o aluno cria uma senha nova ao entrar.",
       dados: { id: novo.id },
     };
   });

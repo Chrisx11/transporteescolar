@@ -10,7 +10,7 @@ import { CIDADES, TURNOS, type Cidade } from "@/lib/rotulos";
 import { dataBR, dataHoraBR } from "@/lib/tempo";
 import { aprovarPreCadastro, recusarPreCadastro } from "./acoes";
 
-export const metadata: Metadata = { title: "Pré-cadastros" };
+export const metadata: Metadata = { title: "Pedidos de passe" };
 
 type Pedido = {
   id: string;
@@ -44,8 +44,8 @@ const ABAS = [
   { chave: "recusado", rotulo: "Recusados" },
 ] as const;
 
-/** Pedidos de cadastro feitos pelo formulário público (/cadastro). */
-export default async function PaginaPreCadastros({ searchParams }: { searchParams: Promise<{ aba?: string }> }) {
+/** Pedidos de passe: cadastros feitos pelos alunos no formulário público (/cadastro). */
+export default async function PaginaPedidosPasse({ searchParams }: { searchParams: Promise<{ aba?: string }> }) {
   await exigirPerfil("semeduc");
   const pedida = (await searchParams).aba;
   const aba = ABAS.find((a) => a.chave === pedida)?.chave ?? "pendente";
@@ -74,15 +74,15 @@ export default async function PaginaPreCadastros({ searchParams }: { searchParam
 
   return (
     <>
-      <Titulo icone={UserRoundPlus} descricao="Cadastros enviados pelos alunos no endereço /cadastro. Confira os documentos e aprove ou recuse.">
-        Pré-cadastros
+      <Titulo icone={UserRoundPlus} descricao="Pedidos feitos pelos alunos no site (/cadastro). Confira os documentos e aprove ou recuse. Aprovado, o aluno entra com o CPF, e a primeira senha também é o CPF.">
+        Pedidos de passe
       </Titulo>
 
       <div className="mb-6 inline-flex rounded-xl bg-slate-100 p-1">
         {ABAS.map((a) => (
           <Link
             key={a.chave}
-            href={a.chave === "pendente" ? "/painel/pre-cadastros" : `/painel/pre-cadastros?aba=${a.chave}`}
+            href={a.chave === "pendente" ? "/painel/pedidos-passe" : `/painel/pedidos-passe?aba=${a.chave}`}
             className={cx(
               "rounded-lg px-4 py-1.5 text-sm font-medium",
               a.chave === aba ? "bg-white text-azul-800 shadow-sm" : "text-slate-600 hover:text-slate-900",
@@ -98,7 +98,7 @@ export default async function PaginaPreCadastros({ searchParams }: { searchParam
 
       {lista.length === 0 ? (
         <Vazio icone={UserRoundPlus}>
-          {aba === "pendente" ? "Nenhum cadastro esperando análise." : "Nenhum cadastro nesta lista."}
+          {aba === "pendente" ? "Nenhum pedido esperando análise." : "Nenhum pedido nesta lista."}
         </Vazio>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-suave">

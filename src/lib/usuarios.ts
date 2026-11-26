@@ -12,6 +12,8 @@ export type NovoUsuario = {
   email: string | null;
   telefone: string | null;
   perfil: Perfil;
+  /** "cpf": a primeira senha é o próprio CPF (só números); senão, uma senha provisória sorteada. */
+  senhaInicial?: "cpf";
 };
 
 /**
@@ -27,7 +29,8 @@ export async function criarUsuario(dados: NovoUsuario): Promise<{ id: string; se
   const { data: existente } = await admin.from("usuarios").select("id").eq("cpf", cpf).maybeSingle();
   if (existente) throw new ErroValidacao("Já existe um cadastro com este CPF.");
 
-  const senha = gerarSenhaProvisoria();
+  // Em qualquer caso o usuário é obrigado a trocar a senha no primeiro acesso.
+  const senha = dados.senhaInicial === "cpf" ? cpf : gerarSenhaProvisoria();
   const email = dados.email?.toLowerCase() ?? null;
   const { data: criado, error: erroAuth } = await admin.auth.admin.createUser({
     email: email ?? emailInterno(cpf),

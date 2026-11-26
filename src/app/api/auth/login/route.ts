@@ -24,7 +24,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ erro: "Requisição inválida." }, { status: 400 });
   }
   const cpf = limparCpf(corpo.cpf ?? "");
-  const senha = corpo.senha ?? "";
+  const digitada = corpo.senha ?? "";
+  // Primeiro acesso de aluno: a senha é o CPF; aceita digitado com pontos e traço.
+  const senha = limparCpf(digitada) === limparCpf(corpo.cpf ?? "") && limparCpf(digitada).length === 11 ? limparCpf(digitada) : digitada;
   const area = corpo.perfil && ehPerfil(corpo.perfil) ? corpo.perfil : null;
   if (!cpfAceito(cpf) || !senha || !area) {
     return NextResponse.json({ erro: "Informe um CPF válido e a senha." }, { status: 400 });

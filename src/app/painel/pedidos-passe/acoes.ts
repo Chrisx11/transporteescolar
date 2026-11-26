@@ -27,7 +27,7 @@ export async function aprovarPreCadastro(_: Estado, fd: FormData): Promise<Estad
     if (error) throw error;
     if (p.status !== "pendente") throw new ErroValidacao("Este cadastro já foi analisado.");
 
-    const novo = await criarUsuario({ nome: p.nome, cpf: p.cpf, email: p.email, telefone: p.telefone, perfil: "aluno" });
+    const novo = await criarUsuario({ nome: p.nome, cpf: p.cpf, email: p.email, telefone: p.telefone, perfil: "aluno", senhaInicial: "cpf" });
     const ext = (path: string) => path.split(".").pop();
     const comprovante = `${novo.id}/comprovante-${Date.now()}.${ext(p.comprovante_path)}`;
     const foto = p.foto_path ? `${novo.id}/foto-${Date.now()}.${ext(p.foto_path)}` : null;
@@ -64,10 +64,10 @@ export async function aprovarPreCadastro(_: Estado, fd: FormData): Promise<Estad
       .eq("id", id);
     if (e3) throw e3;
 
-    revalidatePath("/painel/pre-cadastros");
+    revalidatePath("/painel/pedidos-passe");
     revalidatePath("/painel/alunos");
     return {
-      ok: `Cadastro aprovado. Senha provisória: ${novo.senha} — envie ao aluno pelo WhatsApp ${p.telefone}. Depois marque as rotas dele na tela do aluno.`,
+      ok: `Pedido aprovado. O aluno entra pela página /aluno com o CPF e, no primeiro acesso, a senha também é o CPF (só os números); ele cria uma senha nova ao entrar. Avise pelo WhatsApp ${p.telefone} e marque as rotas dele na tela do aluno.`,
       dados: { aluno_id: novo.id },
     };
   });
@@ -91,7 +91,7 @@ export async function recusarPreCadastro(_: Estado, fd: FormData): Promise<Estad
     await criarClienteAdmin()
       .storage.from("documentos")
       .remove([p.cpf_path, p.comprovante_path, p.residencia_path, p.foto_path].filter((x): x is string => !!x));
-    revalidatePath("/painel/pre-cadastros");
+    revalidatePath("/painel/pedidos-passe");
     return { ok: "Cadastro recusado." };
   });
 }
