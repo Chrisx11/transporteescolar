@@ -14,6 +14,7 @@ import {
   adicionarAnotacao,
   adicionarVinculo,
   alternarAcessoAluno,
+  excluirAluno,
   novaSenhaAluno,
   removerVinculo,
   salvarAluno,
@@ -39,7 +40,7 @@ export default async function PaginaAluno({ params }: { params: Promise<{ id: st
     { data: viagens },
     { data: anotacoes },
   ] = await Promise.all([
-    supabase.from("usuarios").select("nome, cpf, email, telefone, ativo, troca_senha_obrigatoria").eq("id", id).maybeSingle(),
+    supabase.from("usuarios").select("nome, cpf, email, telefone, ativo, troca_senha_obrigatoria, perfil").eq("id", id).maybeSingle(),
     supabase.from("alunos").select("*").eq("usuario_id", id).maybeSingle(),
     supabase.from("aluno_vinculos").select("id, curso, periodo, turno, instituicao:instituicoes(nome, cidade)").eq("aluno_id", id),
     supabase.from("aluno_viagens").select("viagem_modelo_id").eq("aluno_id", id),
@@ -238,6 +239,18 @@ export default async function PaginaAluno({ params }: { params: Promise<{ id: st
                   variante={usuario.ativo ? "perigo" : "secundario"}
                 />
               </div>
+              {usuario.perfil === "aluno" && (
+                <div className="mt-5 border-t border-slate-100 pt-4">
+                  <p className="mb-2 text-sm text-slate-600">Excluir apaga o login, as reservas, as rotas e os documentos do aluno. Não dá para desfazer.</p>
+                  <AcaoRapida
+                    acao={excluirAluno}
+                    campos={{ id, voltar: "lista" }}
+                    rotulo="Excluir aluno"
+                    icone={<Trash2 />}
+                    confirmar={`Excluir ${usuario.nome} de vez? Não dá para desfazer.`}
+                  />
+                </div>
+              )}
             </Expansivel>
 
             <Expansivel icone={StickyNote} titulo={`Anotações da secretaria (${(anotacoes ?? []).length})`}>

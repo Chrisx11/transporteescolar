@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ArrowLeft, ArrowRight, GraduationCap } from "lucide-react";
+import { ArrowLeft, ArrowRight, GraduationCap, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { exigirPerfil } from "@/lib/auth";
 import { criarClienteServidor } from "@/lib/supabase/server";
@@ -7,6 +7,8 @@ import { BotaoLink, Entrada, Selecao, Selo, Tabela, Titulo, Vazio, Botao } from 
 import { Validade } from "@/components/validade";
 import { formatarCpf, limparCpf } from "@/lib/cpf";
 import { SITUACOES_ALUNO } from "@/lib/rotulos";
+import { AcaoRapida } from "@/components/formulario";
+import { excluirAluno } from "./acoes";
 
 export const metadata: Metadata = { title: "Alunos" };
 
@@ -16,7 +18,7 @@ type Linha = {
   usuario_id: string;
   situacao: keyof typeof SITUACOES_ALUNO;
   matricula_validade: string | null;
-  usuario: { nome: string; cpf: string; telefone: string | null };
+  usuario: { nome: string; cpf: string; telefone: string | null; perfil: string };
   aluno_vinculos: { curso: string; instituicao: { nome: string } | null }[];
 };
 
@@ -35,7 +37,7 @@ export default async function PaginaAlunos({
   let consulta = supabase
     .from("alunos")
     .select(
-      "usuario_id, situacao, matricula_validade, usuario:usuarios!inner(nome, cpf, telefone), aluno_vinculos(curso, instituicao:instituicoes(nome))",
+      "usuario_id, situacao, matricula_validade, usuario:usuarios!inner(nome, cpf, telefone, perfil), aluno_vinculos(curso, instituicao:instituicoes(nome))",
       { count: "exact" },
     )
     .order("usuario(nome)")
@@ -89,6 +91,7 @@ export default async function PaginaAlunos({
               <th>Instituição / curso</th>
               <th>Matrícula</th>
               <th>Situação</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -113,6 +116,18 @@ export default async function PaginaAlunos({
                 </td>
                 <td>
                   <Selo cor={COR_SITUACAO[a.situacao]}>{SITUACOES_ALUNO[a.situacao]}</Selo>
+                </td>
+                <td className="text-right">
+                  {a.usuario.perfil === "aluno" && (
+                    <AcaoRapida
+                      acao={excluirAluno}
+                      campos={{ id: a.usuario_id }}
+                      rotulo="Excluir"
+                      icone={<Trash2 />}
+                      variante="fantasma"
+                      confirmar={`Excluir ${a.usuario.nome}? O login, as reservas, as rotas e os documentos dele serão apagados. Não dá para desfazer.`}
+                    />
+                  )}
                 </td>
               </tr>
             ))}

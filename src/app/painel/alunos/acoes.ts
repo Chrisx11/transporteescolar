@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { sessaoComPerfil } from "@/lib/auth";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { criarClienteAdmin } from "@/lib/supabase/admin";
@@ -167,6 +168,36 @@ export async function removerVinculo(_: Estado, fd: FormData): Promise<Estado> {
     const { error } = await supabase.from("aluno_vinculos").delete().eq("id", campoObrigatorio(fd, "id", "id"));
     if (error) throw error;
     revalidatePath("/painel/alunos", "layout");
+  });
+}
+
+/**
+ * Exclui o aluno de vez: o login (Supabase Auth) e, em cascata, o cadastro,
+ * reservas, rotas, cursos, embarques e frequência; apaga também os arquivos dele.
+ * Só para usuários com perfil "aluno" (nunca apaga Admin, secretarias ou motoristas).
+ */
+export async function excluirAluno(_: Estado, fd: FormData): Promise<Estado> {
+  return executar(async () => {
+    await sessaoComPerfil("semeduc");
+    const id = campoObrigatorio(fd, "id", "id");
+    const supabase = await criarClienteServidor();
+    const { data: u, error } = await supabase.from("usuarios").select("perfil, nome").eq("id", id).single();
+    if (error) throw error;
+    if (u.perfil !== "aluno") throw new ErroValidacao("Só é possível excluir cadastros de aluno.");
+
+    const admin = criarClienteAdmin();
+    for (const bucket of ["documentos", "fotos"]) {
+      const { data: arquivos } = await admin.storage.from(bucket).list(id, { limit: 1000 });
+      const caminhos = (arquivos ?? []).map((a) => `${id}/${a.name}`);
+      if (caminhos.length) await admin.storage.from(bucket).remove(caminhos);
+    }
+    const { error: e2 } = await admin.auth.admin.deleteUser(id);
+    if (e2) throw new ErroValidacao("Não foi possível excluir o aluno: " + e2.message);
+
+    revalidatePath("/painel/alunos");
+    // Excluído de dentro da tela do aluno: volta para a lista (a tela dele não existe mais).
+    if (fd.get("voltar") === "lista") redirect("/painel/alunos");
+    return { ok: `${u.nome} foi excluído.` };
   });
 }
 
