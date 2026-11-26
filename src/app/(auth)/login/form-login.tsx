@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { Eye, EyeOff, IdCard, Loader2, LockKeyhole, LogIn } from "lucide-react";
+import { Eye, EyeOff, IdCard, Loader2, LockKeyhole, LogIn, Mail } from "lucide-react";
 import { Aviso, Botao, Campo, Entrada, cx } from "@/components/ui";
 import { VISUAL_PERFIL } from "@/components/perfis-visual";
 import { mascaraCpf } from "@/lib/mascaras";
@@ -13,7 +13,10 @@ export function FormLogin({ area }: { area: Perfil }) {
   const busca = useSearchParams();
   const pedido = busca.get("voltar");
   const voltar = pedido?.startsWith("/") && !pedido.startsWith("//") ? pedido : undefined;
+  // A Administração entra com e-mail; os outros acessos, com CPF.
+  const porEmail = area === "admin";
   const [cpf, setCpf] = useState("");
+  const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [verSenha, setVerSenha] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -30,7 +33,7 @@ export function FormLogin({ area }: { area: Perfil }) {
       const r = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cpf, senha, perfil: area }),
+        body: JSON.stringify(porEmail ? { email, senha, perfil: area } : { cpf, senha, perfil: area }),
       });
       const corpo = await r.json();
       if (!r.ok) {
@@ -63,20 +66,38 @@ export function FormLogin({ area }: { area: Perfil }) {
         </div>
       </div>
 
-      <Campo rotulo="CPF">
-        <div className="relative">
-          <IdCard className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-          <Entrada
-            inputMode="numeric"
-            autoComplete="username"
-            placeholder="000.000.000-00"
-            value={cpf}
-            onChange={(e) => setCpf(mascaraCpf(e.target.value))}
-            className="h-12 pl-10 text-base"
-            required
-          />
-        </div>
-      </Campo>
+      {porEmail ? (
+        <Campo rotulo="E-mail">
+          <div className="relative">
+            <Mail className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+            <Entrada
+              type="email"
+              inputMode="email"
+              autoComplete="username"
+              placeholder="seu@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="h-12 pl-10 text-base"
+              required
+            />
+          </div>
+        </Campo>
+      ) : (
+        <Campo rotulo="CPF">
+          <div className="relative">
+            <IdCard className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+            <Entrada
+              inputMode="numeric"
+              autoComplete="username"
+              placeholder="000.000.000-00"
+              value={cpf}
+              onChange={(e) => setCpf(mascaraCpf(e.target.value))}
+              className="h-12 pl-10 text-base"
+              required
+            />
+          </div>
+        </Campo>
+      )}
       <Campo rotulo="Senha">
         <div className="relative">
           <LockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />

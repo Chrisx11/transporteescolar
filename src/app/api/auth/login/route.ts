@@ -12,39 +12,45 @@ const MAX_FALHAS_IP = 30;
 const ERRO_GENERICO = "CPF ou senha incorretos.";
 
 /**
- * Login por CPF: o servidor encontra o login (e-mail no Supabase Auth) ligado
+ * Login por CPF (Administração: por e-mail): o servidor encontra o login (e-mail no Supabase Auth) ligado
  * ao CPF e autentica com a senha. A resposta de erro é sempre a mesma para não
  * revelar quais CPFs estão cadastrados.
  */
 export async function POST(req: NextRequest) {
-  let corpo: { cpf?: string; senha?: string; perfil?: string };
+  let corpo: { cpf?: string; email?: string; senha?: string; perfil?: string };
   try {
     corpo = await req.json();
   } catch {
     return NextResponse.json({ erro: "Requisição inválida." }, { status: 400 });
   }
-  const cpf = limparCpf(corpo.cpf ?? "");
-  const digitada = corpo.senha ?? "";
-  // Primeiro acesso de aluno: a senha é o CPF; aceita digitado com pontos e traço.
-  const senha = limparCpf(digitada) === limparCpf(corpo.cpf ?? "") && limparCpf(digitada).length === 11 ? limparCpf(digitada) : digitada;
   const area = corpo.perfil && ehPerfil(corpo.perfil) ? corpo.perfil : null;
-  if (!cpfAceito(cpf) || !senha || !area) {
-    return NextResponse.json({ erro: "Informe um CPF válido e a senha." }, { status: 400 });
+  // A Administração entra com e-mail; os outros acessos, com CPF.
+  const porEmail = area === "admin";
+  const emailDigitado = (corpo.email ?? "").trim().toLowerCase();
+  const digitada = corpo.senha ?? "";
+  if (!area || !digitada || (porEmail ? !emailDigitado.includes("@") : !cpfAceito(limparCpf(corpo.cpf ?? "")))) {
+    return NextResponse.json({ erro: porEmail ? "Informe o e-mail e a senha." : "Informe um CPF válido e a senha." }, { status: 400 });
   }
 
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
   const admin = criarClienteAdmin();
   const desde = new Date(Date.now() - JANELA_MIN * 60_000).toISOString();
 
-  // Em paralelo: tentativas recentes (bloqueio) e o cadastro do CPF.
-  const [{ count: falhasCpf }, { count: falhasIp }, { data: usuario }] = await Promise.all([
+  const { data: usuario } = porEmail
+    ? await admin.from("usuarios").select("id, cpf, email, perfil, ativo, troca_senha_obrigatoria").eq("email", emailDigitado).eq("perfil", "admin").maybeSingle()
+    : await admin.from("usuarios").select("id, cpf, email, perfil, ativo, troca_senha_obrigatoria").eq("cpf", limparCpf(corpo.cpf ?? "")).maybeSingle();
+  // Chave das tentativas (bloqueio após erros): o CPF do cadastro; e-mail desconhecido usa uma chave fixa.
+  const cpf = porEmail ? (usuario?.cpf ?? "00000000000") : limparCpf(corpo.cpf ?? "");
+  // Primeiro acesso de aluno: a senha é o CPF; aceita digitado com pontos e traço.
+  const senha = !porEmail && limparCpf(digitada) === cpf ? cpf : digitada;
+
+  const [{ count: falhasCpf }, { count: falhasIp }] = await Promise.all([
     admin.from("tentativas_login").select("id", { count: "exact", head: true })
       .eq("cpf", cpf).eq("sucesso", false).gte("criado_em", desde),
     ip
       ? admin.from("tentativas_login").select("id", { count: "exact", head: true })
           .eq("ip", ip).eq("sucesso", false).gte("criado_em", desde)
       : Promise.resolve({ count: 0 }),
-    admin.from("usuarios").select("id, email, perfil, ativo, troca_senha_obrigatoria").eq("cpf", cpf).maybeSingle(),
   ]);
   if ((falhasCpf ?? 0) >= MAX_FALHAS_CPF || (falhasIp ?? 0) >= MAX_FALHAS_IP) {
     return NextResponse.json(
@@ -58,7 +64,7 @@ export async function POST(req: NextRequest) {
 
   if (!usuario || !usuario.ativo) {
     await registrar(false);
-    return NextResponse.json({ erro: ERRO_GENERICO }, { status: 401 });
+    return NextResponse.json({ erro: porEmail ? "E-mail ou senha incorretos." : ERRO_GENERICO }, { status: 401 });
   }
 
   // O e-mail de login é o cadastrado ou o interno <cpf>@login.italva.invalid (decisão 16.2).
@@ -74,7 +80,7 @@ export async function POST(req: NextRequest) {
   }
   if (error) {
     await registrar(false);
-    return NextResponse.json({ erro: ERRO_GENERICO }, { status: 401 });
+    return NextResponse.json({ erro: porEmail ? "E-mail ou senha incorretos." : ERRO_GENERICO }, { status: 401 });
   }
   await registrar(true);
 
