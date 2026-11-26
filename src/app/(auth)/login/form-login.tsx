@@ -130,12 +130,26 @@ export function FormLogin({ area }: { area: Perfil }) {
         Esqueci minha senha
       </Link>
       {area === "aluno" && (
-        <p className="border-t border-slate-100 pt-4 text-center text-sm text-slate-600">
-          Ainda não tem acesso?{" "}
-          <Link href="/cadastro" className="font-semibold text-azul-700 hover:underline">
-            Faça seu cadastro
-          </Link>
-        </p>
+        <div className="flex flex-col gap-1.5 border-t border-slate-100 pt-4 text-center text-sm text-slate-600">
+          <span>
+            Pedido aprovado e ainda não entrou?{" "}
+            <Link href="/primeiro-acesso" className="font-semibold text-azul-700 hover:underline">
+              Primeiro acesso
+            </Link>
+          </span>
+          <span>
+            Fez a inscrição no formulário antigo?{" "}
+            <Link href="/continuar" className="font-semibold text-azul-700 hover:underline">
+              Continuar cadastro
+            </Link>
+          </span>
+          <span>
+            Nunca se inscreveu?{" "}
+            <Link href="/cadastro" className="font-semibold text-azul-700 hover:underline">
+              Faça seu cadastro
+            </Link>
+          </span>
+        </div>
       )}
     </form>
   );
