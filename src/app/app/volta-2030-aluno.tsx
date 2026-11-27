@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ArrowDownLeft, Hourglass, Loader2, TicketCheck, XCircle } from "lucide-react";
@@ -11,6 +11,7 @@ import { desistirVolta2030, reservarVolta2030 } from "./acoes";
 export type MinhaVolta2030 = {
   status: "aberta" | "confirmada" | "cancelada";
   saida_em: string;
+  reservas_ate: string;
   vagas: number;
   reservados: number;
   minha: "aguardando" | "confirmada" | "cancelada" | "desistiu" | null;
@@ -30,13 +31,18 @@ export function Volta2030Aluno({ v }: { v: MinhaVolta2030 }) {
   const [janela, confirmar] = useConfirmacao();
   const hora = HORA.format(new Date(v.saida_em));
   const naLista = v.minha === "aguardando";
+  const ate = HORA.format(new Date(v.reservas_ate));
+  const [encerrou, setEncerrou] = useState(() => Date.now() >= new Date(v.reservas_ate).getTime());
 
-  // Enquanto espera completar, atualiza sozinho para mostrar a confirmação.
+  // Enquanto espera completar, atualiza sozinho para mostrar a confirmação (e esconde o botão às 20:00).
   useEffect(() => {
     if (v.status !== "aberta") return;
-    const t = setInterval(() => document.visibilityState === "visible" && router.refresh(), 20_000);
+    const t = setInterval(() => {
+      setEncerrou(Date.now() >= new Date(v.reservas_ate).getTime());
+      if (document.visibilityState === "visible") router.refresh();
+    }, 20_000);
     return () => clearInterval(t);
-  }, [v.status, router]);
+  }, [v.status, v.reservas_ate, router]);
 
   // Confirmada: a viagem 20:30 aparece como um cartão normal (com ônibus e QR); some para os outros.
   if (v.status === "confirmada") return null;
@@ -50,6 +56,8 @@ export function Volta2030Aluno({ v }: { v: MinhaVolta2030 }) {
     );
   }
   if (!v.na_22) return null;
+  // Passou das 20:00 sem completar: some (a rotina cancela e avisa).
+  if (encerrou && !naLista) return null;
 
   function reservar() {
     iniciar(async () => {
@@ -93,7 +101,11 @@ export function Volta2030Aluno({ v }: { v: MinhaVolta2030 }) {
         <p className="text-sm text-slate-700">
           {v.reservados} de {v.vagas} alunos · {faltam > 0 ? `faltam ${faltam} para confirmar` : "confirmando…"}
         </p>
-        {naLista ? (
+        {encerrou ? (
+          <p className="flex items-center gap-2 text-sm text-slate-600">
+            <Hourglass className="size-4" /> As reservas fecharam às {ate}. Se não completou, você volta às 22:00.
+          </p>
+        ) : naLista ? (
           <div className="flex items-center justify-between gap-3">
             <p className="flex items-center gap-2 text-sm font-medium text-violet-700">
               <Hourglass className="size-4" /> Você está na lista
@@ -108,7 +120,7 @@ export function Volta2030Aluno({ v }: { v: MinhaVolta2030 }) {
           </Botao>
         )}
         <p className="text-xs text-slate-500">
-          Até confirmar, sua vaga das 22:00 continua garantida. Se não completar até as {hora}, você volta às 22:00, sem falta.
+          Reserve ou desista até as {ate}. Até confirmar, sua vaga das 22:00 continua garantida; se não completar, você volta às 22:00, sem falta.
         </p>
       </div>
     </article>

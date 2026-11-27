@@ -13,6 +13,7 @@ export type InfoVolta2030 = {
   existe: boolean;
   pode_ver?: boolean;
   saida_em?: string;
+  reservas_ate?: string;
   liberacao?: {
     status: "aberta" | "confirmada" | "cancelada";
     vagas: number;
@@ -41,6 +42,7 @@ export function Volta2030({ info }: { info: InfoVolta2030 }) {
 
   if (!info.existe || !info.pode_ver) return null;
   const hora = info.saida_em ? HORA.format(new Date(info.saida_em)) : "20:30";
+  const ate = info.reservas_ate ? HORA.format(new Date(info.reservas_ate)) : "20:00";
   const l = info.liberacao;
 
   function escolher(o: OnibusOpcao) {
@@ -92,7 +94,7 @@ export function Volta2030({ info }: { info: InfoVolta2030 }) {
                 <div className="h-full rounded-full bg-violet-500 transition-all" style={{ width: `${Math.min(100, (l.reservados / l.vagas) * 100)}%` }} />
               </div>
               <p className="text-xs text-slate-500">
-                {l.minha ? "Você liberou." : `Liberada por ${l.liberada_por ?? "outro motorista"}.`} Se não completar até as {hora}, é cancelada e todos voltam às 22:00.
+                {l.minha ? "Você liberou." : `Liberada por ${l.liberada_por ?? "outro motorista"}.`} Os alunos reservam até as {ate}; se não completar, é cancelada e todos voltam às 22:00.
               </p>
             </div>
           ) : l.status === "confirmada" ? (

@@ -6,6 +6,7 @@ import { Volta2030Aluno } from "@/app/app/volta-2030-aluno";
 export default function PreviaVolta2030() {
   if (process.env.NODE_ENV === "production") notFound();
   const saida = new Date(new Date().toDateString() + " 20:30").toISOString();
+  const ate = new Date(new Date().toDateString() + " 20:00").toISOString();
   return (
     <main className="mx-auto flex max-w-md flex-col gap-4 bg-[#f4f6fb] p-4">
       <p className="text-xs font-semibold text-slate-500">MOTORISTA · pode liberar</p>
@@ -19,11 +20,11 @@ export default function PreviaVolta2030() {
         }}
       />
       <p className="text-xs font-semibold text-slate-500">MOTORISTA · liberada</p>
-      <Volta2030 info={{ existe: true, pode_ver: true, saida_em: saida, liberacao: { status: "aberta", vagas: 10, reservados: 6, prefixo: "07", liberada_por: "JOÃO", minha: false } }} />
+      <Volta2030 info={{ existe: true, pode_ver: true, saida_em: saida, reservas_ate: ate, liberacao: { status: "aberta", vagas: 10, reservados: 6, prefixo: "07", liberada_por: "JOÃO", minha: false } }} />
       <p className="text-xs font-semibold text-slate-500">ALUNO · liberada</p>
-      <Volta2030Aluno v={{ status: "aberta", saida_em: saida, vagas: 10, reservados: 6, minha: null, na_22: true, prefixo: "07" }} />
+      <Volta2030Aluno v={{ status: "aberta", saida_em: saida, reservas_ate: ate, vagas: 10, reservados: 6, minha: null, na_22: true, prefixo: "07" }} />
       <p className="text-xs font-semibold text-slate-500">ALUNO · na lista</p>
-      <Volta2030Aluno v={{ status: "aberta", saida_em: saida, vagas: 10, reservados: 7, minha: "aguardando", na_22: true, prefixo: "07" }} />
+      <Volta2030Aluno v={{ status: "aberta", saida_em: saida, reservas_ate: ate, vagas: 10, reservados: 7, minha: "aguardando", na_22: true, prefixo: "07" }} />
     </main>
   );
 }

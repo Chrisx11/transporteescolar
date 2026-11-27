@@ -77,8 +77,8 @@ beforeAll(async () => {
 }, 180_000);
 
 describe("liberação pelo motorista", () => {
-  it("antes de a lista das 22:00 fechar, não libera", async () => {
-    expect(await falhaComo(db, M1, "select liberar_volta_2030($1, 2)", [ids.i1])).toMatch(/lista das 22:00 fechar/);
+  it("de manhã (lista das 22:00 ainda aberta) não libera", async () => {
+    expect(await falhaComo(db, M1, "select liberar_volta_2030($1, 2)", [ids.i1])).toMatch(/a partir das 18:30/);
   });
 
   it("motorista que não está em Itaperuna não libera", async () => {
@@ -87,8 +87,14 @@ describe("liberação pelo motorista", () => {
     expect(await falhaComo(db, M3, "select liberar_volta_2030($1, 2)", [ids.i1])).toMatch(/escalado em Itaperuna/);
   });
 
+  it("antes das 18:30 não libera (2 horas antes da saída)", async () => {
+    await relogio(db, "2026-10-26 18:20:00-03");
+    expect(await falhaComo(db, M1, "select liberar_volta_2030($1, 2)", [ids.i1])).toMatch(/a partir das 18:30/);
+    expect((await info(M1)).motivo).toMatch(/a partir das 18:30/);
+  });
+
   it("mostra o mínimo sugerido: os que ficam precisam levar todos às 22:00", async () => {
-    await relogio(db, "2026-10-26 18:00:00-03");
+    await relogio(db, "2026-10-26 18:40:00-03");
     const i = await info(M1);
     expect(i.reservas_22).toBe(4);
     expect(i.capacidade_22).toBe(5);
@@ -149,24 +155,27 @@ describe("reserva e confirmação (cenário 11)", () => {
   it("aparece na tela do aluno e o QR vale desde a confirmação (antes das 19:30)", async () => {
     const minhas = await como<{ nome: string; onibus_prefixo: string }>(db, A[0], "select nome, onibus_prefixo from minhas_viagens('2026-10-26')");
     expect(minhas.find((m) => m.nome === "Volta 20:30")?.onibus_prefixo).toBe("I1");
-    await relogio(db, "2026-10-26 18:10:00-03");
+    await relogio(db, "2026-10-26 18:50:00-03");
     const r = await como<{ embarcar_qr: { ok: boolean } }>(db, A[0], "select embarcar_qr($1)", [ids.token1]);
     expect(r[0].embarcar_qr.ok).toBe(true);
   });
 });
 
-describe("não completou até as 20:30 (cenário 12)", () => {
-  it("cancela, avisa e todos continuam na 22:00", async () => {
+describe("não completou até as 20:00 (cenário 12)", () => {
+  it("às 20:00 cancela, avisa e todos continuam na 22:00", async () => {
     await relogio(db, "2026-10-27 10:00:00-03");
     await como(db, SEMTRANSP, "select gerar_viagens_dia(2)");
     await reservarTodas22("2026-10-27");
     await relogio(db, "2026-10-27 15:05:00-03");
     await como(db, SEMTRANSP, "select fechar_prazos()");
-    await relogio(db, "2026-10-27 18:00:00-03");
+    await relogio(db, "2026-10-27 18:40:00-03");
     await como(db, M2, "select liberar_volta_2030($1, 2)", [ids.i1]);
     await como(db, A[0], "select reservar_volta_2030()");
 
-    await relogio(db, "2026-10-27 20:31:00-03");
+    // Depois das 20:00 ninguém reserva nem desiste.
+    await relogio(db, "2026-10-27 20:01:00-03");
+    expect(await falhaComo(db, A[1], "select reservar_volta_2030()")).toMatch(/fecharam às 20:00/);
+    expect(await falhaComo(db, A[0], "select desistir_volta_2030()")).toMatch(/fecharam às 20:00/);
     await como(db, SEMTRANSP, "select encerrar_liberacoes_2030()");
     const l = await db.query<{ status: string }>("select status from liberacoes_2030 where data = '2026-10-27'");
     expect(l.rows[0].status).toBe("cancelada");
