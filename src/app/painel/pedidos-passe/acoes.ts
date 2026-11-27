@@ -7,7 +7,7 @@ import { criarClienteAdmin } from "@/lib/supabase/admin";
 import { campo, campoObrigatorio, ErroValidacao, executar, type Estado } from "@/lib/acoes";
 import { criarUsuario } from "@/lib/usuarios";
 import { DIAS_VALIDADE_LINK, linkCompletar, novoCodigo } from "@/lib/codigo-link";
-import { emailCompletarPedido, emailConfigurado, enviarEmails } from "@/lib/email";
+import { emailCompletarPedido, emailConfigurado, enviarEmails, loteDeEnvio } from "@/lib/email";
 
 /** Copia um arquivo do pedido para a pasta do aluno (bucket de destino pode ser outro). */
 async function copiar(origem: string, bucket: "documentos" | "fotos", destino: string) {
@@ -210,11 +210,11 @@ export async function enviarLinkPedido(_: Estado, fd: FormData): Promise<Estado>
   });
 }
 
-/** Envia o link para os pedidos aguardando que ainda não receberam e-mail (até 200 por vez). */
+/** Envia o link para os pedidos aguardando que ainda não receberam e-mail (um lote por clique). */
 export async function enviarLinksNaoEnviados(): Promise<Estado> {
   return executar(async () => {
     await sessaoComPerfil("semeduc");
-    if (!emailConfigurado()) throw new ErroValidacao("O envio de e-mail ainda não foi configurado (falta a chave do Resend nas configurações do site).");
+    if (!emailConfigurado()) throw new ErroValidacao("O envio de e-mail ainda não foi configurado (faltam os dados do Gmail nas configurações do site).");
     const supabase = await criarClienteServidor();
     const { data, error } = await supabase
       .from("pre_cadastros")
@@ -222,7 +222,7 @@ export async function enviarLinksNaoEnviados(): Promise<Estado> {
       .eq("status", "aguardando")
       .is("email_enviado_em", null)
       .order("criado_em")
-      .limit(200);
+      .limit(loteDeEnvio());
     if (error) throw error;
     if (!data?.length) return { ok: "Todos os pedidos aguardando já receberam o link." };
     const r = await enviarLinks(data);

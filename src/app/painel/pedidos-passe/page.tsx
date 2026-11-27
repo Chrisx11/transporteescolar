@@ -9,7 +9,10 @@ import { formatarCpf } from "@/lib/cpf";
 import { CIDADES, TURNOS, type Cidade } from "@/lib/rotulos";
 import { dataBR, dataHoraBR } from "@/lib/tempo";
 import { AcaoRapida } from "@/components/formulario";
-import { emailConfigurado } from "@/lib/email";
+import { emailConfigurado, loteDeEnvio } from "@/lib/email";
+
+// Enviar um lote de e-mails pelo Gmail pode levar alguns segundos.
+export const maxDuration = 60;
 import { aprovarPreCadastro, enviarLinkPedido, enviarLinksNaoEnviados, recusarPreCadastro } from "./acoes";
 import { CopiarLink } from "./copiar-link";
 import { CarregandoLink } from "@/components/carregando-link";
@@ -304,7 +307,7 @@ function ListaAguardando({ lista, naoEnviados, emailPronto }: { lista: Pedido[];
             rotulo={`Enviar e-mail para quem ainda não recebeu (${naoEnviados})`}
             icone={<Send />}
             variante="primario"
-            confirmar={`Enviar o link por e-mail para ${Math.min(naoEnviados, 200)} aluno(s)${naoEnviados > 200 ? " (os próximos ficam para o próximo clique)" : ""}?`}
+            confirmar={`Enviar o link por e-mail para ${Math.min(naoEnviados, loteDeEnvio())} aluno(s)${naoEnviados > loteDeEnvio() ? " (os próximos ficam para o próximo clique)" : ""}?`}
           />
         )}
       </div>

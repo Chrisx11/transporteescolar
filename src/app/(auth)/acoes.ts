@@ -45,8 +45,10 @@ export async function redefinirSenha(_: Estado, fd: FormData): Promise<Estado> {
   if (!user) return { erro: "O link expirou. Peça um novo." };
   const erro = await salvarNovaSenha(fd);
   if (erro) return { erro };
+  // Volta para a página de login do próprio perfil (a Administração entra pela /admin).
+  const { data: u } = await supabase.from("usuarios").select("perfil").eq("id", user.id).maybeSingle();
   await supabase.auth.signOut();
-  redirect("/login?senha=redefinida");
+  redirect(`/${u?.perfil ?? "aluno"}?senha=redefinida`);
 }
 
 /** Envia o link de recuperação para o e-mail cadastrado no CPF. */

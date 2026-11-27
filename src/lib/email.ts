@@ -1,29 +1,68 @@
 import "server-only";
 
+import nodemailer from "nodemailer";
+
 /**
- * Envio de e-mail pelo Resend (resend.com). Configuração (variáveis de ambiente):
- *   RESEND_API_KEY  – chave da conta no Resend (obrigatória para enviar);
- *   EMAIL_REMETENTE – ex.: "Transporte Italva <transporte@italva.rj.gov.br>"
- *                     (o domínio precisa estar verificado no Resend).
- * Sem domínio verificado, o Resend só entrega no e-mail do dono da conta.
+ * Envio de e-mail do sistema. Dois jeitos (variáveis de ambiente):
+ *  1. Gmail (ou outro SMTP) — usado quando há SMTP_USUARIO e SMTP_SENHA:
+ *       SMTP_USUARIO = italvasemtransp@gmail.com
+ *       SMTP_SENHA   = senha de app do Google (16 letras; não é a senha da conta)
+ *       SMTP_HOST / SMTP_PORTA (opcionais; padrão smtp.gmail.com / 465)
+ *     O Gmail manda até ~500 e-mails por dia.
+ *  2. Resend — RESEND_API_KEY (+ EMAIL_REMETENTE com domínio verificado).
  */
 
 export type Email = { para: string; assunto: string; html: string; texto: string };
 export type ResultadoEnvio = { ok: true } | { ok: false; erro: string };
 
-const SEM_CONFIGURACAO = "O envio de e-mail ainda não foi configurado (falta a chave do Resend nas configurações do site).";
+const SEM_CONFIGURACAO = "O envio de e-mail ainda não foi configurado (faltam os dados do Gmail nas configurações do site).";
+
+const usaSmtp = () => !!(process.env.SMTP_USUARIO && process.env.SMTP_SENHA);
 
 export function emailConfigurado(): boolean {
-  return !!process.env.RESEND_API_KEY;
+  return usaSmtp() || !!process.env.RESEND_API_KEY;
+}
+
+/** Quantos e-mails mandar por clique (o Gmail é mais lento e tem limite diário menor). */
+export function loteDeEnvio(): number {
+  return usaSmtp() ? 40 : 100;
 }
 
 function remetente() {
-  return process.env.EMAIL_REMETENTE || "Transporte Italva <onboarding@resend.dev>";
+  if (process.env.EMAIL_REMETENTE) return process.env.EMAIL_REMETENTE;
+  return usaSmtp() ? `Transporte Italva <${process.env.SMTP_USUARIO}>` : "Transporte Italva <onboarding@resend.dev>";
 }
 
-/** Envia vários e-mails (até 100 por chamada) e devolve o resultado de cada um, na mesma ordem. */
-export async function enviarEmails(emails: Email[]): Promise<ResultadoEnvio[]> {
-  if (!emailConfigurado()) return emails.map(() => ({ ok: false, erro: SEM_CONFIGURACAO }));
+async function enviarPorSmtp(emails: Email[]): Promise<ResultadoEnvio[]> {
+  const porta = Number(process.env.SMTP_PORTA || 465);
+  const transporte = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || "smtp.gmail.com",
+    port: porta,
+    secure: porta === 465,
+    pool: true,
+    maxConnections: 3,
+    auth: { user: process.env.SMTP_USUARIO, pass: process.env.SMTP_SENHA },
+  });
+  try {
+    return await Promise.all(
+      emails.map(async (e): Promise<ResultadoEnvio> => {
+        try {
+          await transporte.sendMail({ from: remetente(), to: e.para, subject: e.assunto, html: e.html, text: e.texto });
+          return { ok: true };
+        } catch (err) {
+          const msg = (err as Error).message ?? "";
+          if (/Invalid login|Username and Password not accepted|535/i.test(msg)) return { ok: false, erro: "O Gmail recusou o login (confira a senha de app)." };
+          if (/limit|quota|550 5.4.5/i.test(msg)) return { ok: false, erro: "O Gmail atingiu o limite de envios do dia. Tente amanhã." };
+          return { ok: false, erro: "Não foi possível enviar este e-mail." };
+        }
+      }),
+    );
+  } finally {
+    transporte.close();
+  }
+}
+
+async function enviarPorResend(emails: Email[]): Promise<ResultadoEnvio[]> {
   const resultados: ResultadoEnvio[] = [];
   for (let i = 0; i < emails.length; i += 100) {
     const lote = emails.slice(i, i + 100);
@@ -45,6 +84,12 @@ export async function enviarEmails(emails: Email[]): Promise<ResultadoEnvio[]> {
     }
   }
   return resultados;
+}
+
+/** Envia vários e-mails e devolve o resultado de cada um, na mesma ordem. */
+export async function enviarEmails(emails: Email[]): Promise<ResultadoEnvio[]> {
+  if (!emailConfigurado()) return emails.map(() => ({ ok: false, erro: SEM_CONFIGURACAO }));
+  return usaSmtp() ? enviarPorSmtp(emails) : enviarPorResend(emails);
 }
 
 const escapar = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
