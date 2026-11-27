@@ -6,7 +6,6 @@ import { exigirPerfil } from "@/lib/auth";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { Avatar, Marca } from "@/components/ui";
 import { PERFIS } from "@/lib/rotulos";
-import { TrocarArea } from "@/components/trocar-area";
 import { MenuApp } from "@/components/menu-app";
 
 /** App do aluno (o do motorista troca o manifesto em app/motorista/layout.tsx). */
@@ -41,7 +40,6 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
 
   return (
     <>
-    {sessao.admin && <TrocarArea atual={sessao.perfil === "motorista" ? "motorista" : "aluno"} />}
     <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-[#f4f6fb] sm:my-6 sm:min-h-[calc(100dvh-3rem)] sm:overflow-hidden sm:rounded-[2rem] sm:shadow-elevada">
       <header className="relative overflow-hidden bg-gradient-to-br from-azul-600 via-azul-700 to-azul-900 px-5 pb-16 pt-[max(1.5rem,calc(env(safe-area-inset-top)+0.75rem))] text-white">
         <div className="fundo-pontos absolute inset-0 opacity-50" aria-hidden />

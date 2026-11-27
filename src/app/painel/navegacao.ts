@@ -24,7 +24,7 @@ export const INICIO: ItemMenu = { href: "/painel", rotulo: "Início", icone: Lay
 export const MENU: GrupoMenu[] = [
   {
     titulo: "Transportes",
-    perfis: ["semtransp", "admin"],
+    perfis: ["semtransp"],
     itens: [
       { href: "/painel/dia", rotulo: "Painel do dia", icone: Activity },
       { href: "/painel/onibus", rotulo: "Ônibus", icone: Bus },
@@ -32,11 +32,12 @@ export const MENU: GrupoMenu[] = [
       { href: "/painel/pontos", rotulo: "Pontos", icone: MapPin },
       { href: "/painel/viagens", rotulo: "Viagens modelo", icone: Route },
       { href: "/painel/escala", rotulo: "Escala semanal", icone: CalendarRange },
+      { href: "/painel/parametros", rotulo: "Parâmetros", icone: SlidersHorizontal },
     ],
   },
   {
     titulo: "Educação",
-    perfis: ["semeduc", "admin"],
+    perfis: ["semeduc"],
     itens: [
       { href: "/painel/alunos", rotulo: "Alunos", icone: GraduationCap },
       { href: "/painel/pedidos-passe", rotulo: "Pedidos de passe", icone: UserRoundPlus },
@@ -48,8 +49,7 @@ export const MENU: GrupoMenu[] = [
     titulo: "Administração",
     perfis: ["admin"],
     itens: [
-      { href: "/painel/usuarios", rotulo: "Usuários", icone: UsersRound },
-      { href: "/painel/parametros", rotulo: "Parâmetros", icone: SlidersHorizontal },
+      { href: "/painel/usuarios", rotulo: "Usuários e senhas", icone: UsersRound },
     ],
   },
 ];
@@ -69,7 +69,7 @@ const ROTULOS: Record<string, string> = {
   "pedidos-passe": "Pedidos de passe",
   instituicoes: "Instituições",
   calendario: "Feriados e recessos",
-  usuarios: "Usuários",
+  usuarios: "Usuários e senhas",
   parametros: "Parâmetros",
 };
 

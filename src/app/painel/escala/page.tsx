@@ -36,7 +36,7 @@ export default async function PaginaEscala({ searchParams }: { searchParams: Pro
       .select("id, viagem_modelo_id, onibus(prefixo, capacidade, situacao), motorista:motoristas(usuario:usuarios(nome))")
       .eq("dia_semana", dia),
     supabase.from("onibus").select("id, prefixo, capacidade, situacao").order("prefixo"),
-    supabase.from("motoristas").select("usuario_id, usuario:usuarios(nome, ativo)"),
+    supabase.from("motoristas").select("usuario_id, usuario:usuarios!inner(nome, ativo, perfil)").eq("usuario.perfil", "motorista"),
   ]);
 
   const listaViagens = (viagens ?? []) as Viagem[];

@@ -390,7 +390,7 @@ export default async function PainelDoDia({ searchParams }: { searchParams: Prom
   const [viagens, { data: onibus }, { data: motoristas }, { data: lib2030 }] = await Promise.all([
     carregarDia(data),
     supabase.from("onibus").select("id, prefixo, placa, capacidade, situacao").eq("situacao", "ativo").order("placa"),
-    supabase.from("motoristas").select("usuario_id, usuario:usuarios(nome, ativo)"),
+    supabase.from("motoristas").select("usuario_id, usuario:usuarios!inner(nome, ativo, perfil)").eq("usuario.perfil", "motorista"),
     // Volta 20:30 de Itaperuna liberada por um motorista (Fase 4).
     supabase
       .from("liberacoes_2030")

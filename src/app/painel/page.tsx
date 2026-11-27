@@ -35,9 +35,10 @@ function saudacao() {
 type Atalho = { href: string; rotulo: string; descricao: string; icone: LucideIcon };
 
 export default async function InicioPainel() {
-  const sessao = await exigirPerfil("semeduc", "semtransp", "admin");
-  const veTransp = sessao.perfil !== "semeduc";
-  const veEduc = sessao.perfil !== "semtransp";
+  // O Admin não tem resumo: entra direto em Usuários e senhas (exigirPerfil o redireciona).
+  const sessao = await exigirPerfil("semeduc", "semtransp");
+  const veTransp = sessao.perfil === "semtransp";
+  const veEduc = sessao.perfil === "semeduc";
   const hoje = hojeSP();
 
   const [onibus, motoristas, pontos, alunosAtivos, alunosPendentes, instituicoes, doDia] = await Promise.all([

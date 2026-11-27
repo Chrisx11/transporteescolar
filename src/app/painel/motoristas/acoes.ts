@@ -3,60 +3,37 @@
 import { revalidatePath } from "next/cache";
 import { sessaoComPerfil } from "@/lib/auth";
 import { criarClienteServidor } from "@/lib/supabase/server";
-import { criarClienteAdmin } from "@/lib/supabase/admin";
 import { campo, campoObrigatorio, executar, type Estado } from "@/lib/acoes";
-import { atualizarUsuario, criarUsuario, definirAtivo, redefinirSenhaProvisoria } from "@/lib/usuarios";
+import { telefonePadrao } from "@/lib/formatos";
 
-function dadosCnh(fd: FormData) {
-  return {
-    cnh_numero: campo(fd, "cnh_numero"),
-    cnh_categoria: (campo(fd, "cnh_categoria") ?? "D").toUpperCase(),
-    cnh_validade: campo(fd, "cnh_validade"),
-  };
-}
-
+/**
+ * A SEMTRANSP só completa os dados de trabalho do motorista (telefone e CNH).
+ * Login, senha e bloqueio de acesso ficam com o Admin (Usuários e senhas).
+ */
 export async function salvarMotorista(_: Estado, fd: FormData): Promise<Estado> {
   return executar(async () => {
     await sessaoComPerfil("semtransp");
     const supabase = await criarClienteServidor();
-    const id = campo(fd, "id");
-    const contato = {
-      nome: campoObrigatorio(fd, "nome", "Nome"),
-      email: campo(fd, "email"),
-      telefone: campo(fd, "telefone"),
-    };
-
-    if (id) {
-      await atualizarUsuario(id, contato);
-      const { error } = await supabase.from("motoristas").update(dadosCnh(fd)).eq("usuario_id", id);
-      if (error) throw error;
-      revalidatePath("/painel/motoristas");
-      return { ok: "Motorista atualizado." };
-    }
-
-    const novo = await criarUsuario({ ...contato, cpf: campoObrigatorio(fd, "cpf", "CPF"), perfil: "motorista" });
-    const { error } = await supabase.from("motoristas").insert({ usuario_id: novo.id, ...dadosCnh(fd) });
-    if (error) {
-      await criarClienteAdmin().auth.admin.deleteUser(novo.id);
-      throw error;
-    }
+    const id = campoObrigatorio(fd, "id", "Motorista");
+    const telefone = campo(fd, "telefone");
+    const { data, error: e1 } = await supabase
+      .from("usuarios")
+      .update({ telefone: telefone ? telefonePadrao(telefone) : null })
+      .eq("id", id)
+      .eq("perfil", "motorista")
+      .select("id");
+    if (e1) throw e1;
+    if (!data?.length) throw new Error("Motorista não encontrado.");
+    const { error } = await supabase
+      .from("motoristas")
+      .update({
+        cnh_numero: campo(fd, "cnh_numero"),
+        cnh_categoria: (campo(fd, "cnh_categoria") ?? "D").toUpperCase(),
+        cnh_validade: campo(fd, "cnh_validade"),
+      })
+      .eq("usuario_id", id);
+    if (error) throw error;
     revalidatePath("/painel/motoristas");
-    return { ok: `Motorista cadastrado. Senha provisória: ${novo.senha} — anote e entregue ao motorista.` };
-  });
-}
-
-export async function novaSenhaMotorista(_: Estado, fd: FormData): Promise<Estado> {
-  return executar(async () => {
-    await sessaoComPerfil("semtransp");
-    const senha = await redefinirSenhaProvisoria(campoObrigatorio(fd, "id", "id"));
-    return { ok: `Nova senha provisória: ${senha}` };
-  });
-}
-
-export async function alternarMotorista(_: Estado, fd: FormData): Promise<Estado> {
-  return executar(async () => {
-    await sessaoComPerfil("semtransp");
-    await definirAtivo(campoObrigatorio(fd, "id", "id"), fd.get("ativo") === "true");
-    revalidatePath("/painel/motoristas");
+    return { ok: "Motorista atualizado." };
   });
 }

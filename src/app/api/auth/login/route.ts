@@ -1,6 +1,4 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { cookies } from "next/headers";
-import { COOKIE_MODO_ADMIN } from "@/lib/auth";
 import { criarClienteAdmin } from "@/lib/supabase/admin";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { cpfAceito, limparCpf } from "@/lib/cpf";
@@ -118,8 +116,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Admin entra sempre no painel completo; a faixa "Ver como" troca de área depois.
-  if (usuario.perfil === "admin") (await cookies()).delete(COOKIE_MODO_ADMIN);
   const destino = usuario.troca_senha_obrigatoria ? "/trocar-senha" : inicioDoPerfil(usuario.perfil as Perfil);
   return NextResponse.json({ destino });
 }
@@ -135,10 +131,10 @@ async function conferirPrimeiroAcesso(
     admin.from("usuarios").select("telefone").eq("id", id).maybeSingle(),
     admin.from("alunos").select("data_nascimento").eq("usuario_id", id).maybeSingle(),
   ]);
-  const fone = (u?.telefone ?? "").replace(/D/g, "");
+  const fone = (u?.telefone ?? "").replace(/\D/g, "");
   const nasc = a?.data_nascimento ?? null;
   if (fone.length < 4 && !nasc) return "sem_dados";
-  const digitos = (telefone4 ?? "").replace(/D/g, "");
+  const digitos = (telefone4 ?? "").replace(/\D/g, "");
   if (fone.length >= 4 && digitos.length === 4 && fone.endsWith(digitos)) return "ok";
   if (nasc && nascimento && nascimento === nasc) return "ok";
   return "nao_confere";

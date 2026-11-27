@@ -1,6 +1,5 @@
 import "server-only";
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
 import { cache } from "react";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { inicioDoPerfil, type Perfil } from "@/lib/rotulos";
@@ -14,15 +13,9 @@ export type UsuarioSessao = {
   perfil: Perfil;
   ativo: boolean;
   troca_senha_obrigatoria: boolean;
-  /** Login de Admin (mesmo quando está vendo outra área). */
+  /** Login de Admin. */
   admin: boolean;
 };
-
-/** Cookie com a área que o Admin está vendo (aluno, motorista, semeduc, semtransp); ausente = Admin completo. */
-export const COOKIE_MODO_ADMIN = "modo_admin";
-export const MODOS_ADMIN = ["aluno", "motorista", "semeduc", "semtransp"] as const;
-export type ModoAdmin = (typeof MODOS_ADMIN)[number];
-export const ehModoAdmin = (v: unknown): v is ModoAdmin => (MODOS_ADMIN as readonly unknown[]).includes(v);
 
 /** Usuário logado + registro em `usuarios`. Nulo se não houver sessão válida. */
 export const obterSessao = cache(async (): Promise<UsuarioSessao | null> => {
@@ -37,27 +30,18 @@ export const obterSessao = cache(async (): Promise<UsuarioSessao | null> => {
     .eq("id", id)
     .maybeSingle();
   if (!data || !data.ativo) return null;
-  const sessao: UsuarioSessao = { ...(data as Omit<UsuarioSessao, "admin">), admin: data.perfil === "admin" };
-  // O Admin pode testar cada área (aluno, motorista, SEMEDUC, SEMTRANSP) com o próprio login.
-  if (sessao.admin) {
-    const modo = (await cookies()).get(COOKIE_MODO_ADMIN)?.value;
-    if (ehModoAdmin(modo)) sessao.perfil = modo;
-  }
-  return sessao;
+  return { ...(data as Omit<UsuarioSessao, "admin">), admin: data.perfil === "admin" };
 });
 
 /**
  * Exige login com um dos perfis. Também força a troca da senha provisória.
- * O Admin tem acesso a todas as áreas do painel.
+ * Cada perfil só entra na própria área (o Admin só cria usuários).
  */
 export async function exigirPerfil(...perfis: Perfil[]): Promise<UsuarioSessao> {
   const sessao = await obterSessao();
   if (!sessao) redirect("/login");
   if (sessao.troca_senha_obrigatoria) redirect("/trocar-senha");
-  const permitido =
-    perfis.length === 0 ||
-    perfis.includes(sessao.perfil) ||
-    (sessao.perfil === "admin" && perfis.some((p) => p === "semeduc" || p === "semtransp"));
+  const permitido = perfis.length === 0 || perfis.includes(sessao.perfil);
   if (!permitido) redirect(inicioDoPerfil(sessao.perfil));
   return sessao;
 }
@@ -66,9 +50,6 @@ export async function exigirPerfil(...perfis: Perfil[]): Promise<UsuarioSessao> 
 export async function sessaoComPerfil(...perfis: Perfil[]): Promise<UsuarioSessao> {
   const sessao = await obterSessao();
   if (!sessao || sessao.troca_senha_obrigatoria) throw new Error("Sessão expirada. Entre novamente.");
-  const ok =
-    perfis.includes(sessao.perfil) ||
-    (sessao.perfil === "admin" && perfis.some((p) => p === "semeduc" || p === "semtransp"));
-  if (!ok) throw new Error("Você não tem permissão para esta ação.");
+  if (!perfis.includes(sessao.perfil)) throw new Error("Você não tem permissão para esta ação.");
   return sessao;
 }

@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Parâmetros" };
 type Parametro = { chave: string; valor: unknown; tipo: "numero" | "texto" | "hora" | "booleano"; rotulo: string; descricao: string | null };
 
 export default async function PaginaParametros() {
-  await exigirPerfil("admin");
+  await exigirPerfil("semtransp");
   const supabase = await criarClienteServidor();
   const { data } = await supabase.from("parametros").select("chave, valor, tipo, rotulo, descricao").order("chave");
   const lista = (data ?? []) as Parametro[];

@@ -86,7 +86,7 @@ export default async function PaginaPedidosPasse({ searchParams }: { searchParam
     .range((pag - 1) * POR_PAGINA, pag * POR_PAGINA - 1);
   consulta = aba === "aguardando" ? consulta.order("nome") : consulta.order("criado_em", { ascending: aba === "pendente" });
   if (termo) {
-    const digitos = termo.replace(/D/g, "");
+    const digitos = termo.replace(/\D/g, "");
     const filtros = [`nome.ilike.%${termo}%`, `email.ilike.%${termo}%`];
     if (digitos.length >= 3) filtros.push(`cpf.like.${digitos}%`);
     if (digitos.length >= 4) filtros.push(`telefone.ilike.%${digitos.slice(-4)}%`);

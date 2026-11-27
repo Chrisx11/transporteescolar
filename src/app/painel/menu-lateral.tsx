@@ -63,7 +63,7 @@ function Navegacao({ perfil, recolhido, aoNavegar }: { perfil: Perfil; recolhido
       className={cx("flex-1 px-3 py-4", recolhido ? "overflow-visible" : "overflow-y-auto overflow-x-hidden")}
       aria-label="Menu principal"
     >
-      <LinkMenu item={INICIO} recolhido={recolhido} aoNavegar={aoNavegar} />
+      {perfil !== "admin" && <LinkMenu item={INICIO} recolhido={recolhido} aoNavegar={aoNavegar} />}
       {grupos.map((g) => (
         <div key={g.titulo} className="mt-5">
           {recolhido ? (

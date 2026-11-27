@@ -38,6 +38,7 @@ export const PERFIS_PAINEL: Perfil[] = ["semeduc", "semtransp", "admin"];
 export function inicioDoPerfil(perfil: Perfil): string {
   if (perfil === "aluno") return "/app";
   if (perfil === "motorista") return "/app/motorista";
+  if (perfil === "admin") return "/painel/usuarios";
   return "/painel";
 }
 

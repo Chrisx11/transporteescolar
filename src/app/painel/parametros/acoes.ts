@@ -7,7 +7,7 @@ import { campoObrigatorio, ErroValidacao, executar, type Estado } from "@/lib/ac
 
 export async function salvarParametro(_: Estado, fd: FormData): Promise<Estado> {
   return executar(async () => {
-    await sessaoComPerfil("admin");
+    await sessaoComPerfil("semtransp");
     const chave = campoObrigatorio(fd, "chave", "chave");
     const tipo = campoObrigatorio(fd, "tipo", "tipo");
     let valor: unknown;

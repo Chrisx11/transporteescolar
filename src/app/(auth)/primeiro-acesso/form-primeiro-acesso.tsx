@@ -105,7 +105,7 @@ export function FormPrimeiroAcesso() {
               placeholder="0000"
               maxLength={4}
               value={telefone4}
-              onChange={(e) => setTelefone4(e.target.value.replace(/D/g, "").slice(0, 4))}
+              onChange={(e) => setTelefone4(e.target.value.replace(/\D/g, "").slice(0, 4))}
               className="h-12 pl-10 text-base tracking-[0.3em]"
               required
               pattern="\d{4}"

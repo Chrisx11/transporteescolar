@@ -2,11 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { sessaoComPerfil } from "@/lib/auth";
+import { criarClienteAdmin } from "@/lib/supabase/admin";
+import { criarClienteServidor } from "@/lib/supabase/server";
 import { campo, campoObrigatorio, ErroValidacao, executar, type Estado } from "@/lib/acoes";
 import { atualizarUsuario, criarUsuario, definirAtivo, redefinirSenhaProvisoria } from "@/lib/usuarios";
 import type { Perfil } from "@/lib/rotulos";
 
-const PERFIS_EQUIPE: Perfil[] = ["semeduc", "semtransp", "admin"];
+/** O Admin cria o login da equipe das secretarias e dos motoristas (alunos: SEMEDUC e Pedidos de passe). */
+const PERFIS_EQUIPE: Perfil[] = ["semeduc", "semtransp", "motorista", "admin"];
 
 export async function salvarUsuarioEquipe(_: Estado, fd: FormData): Promise<Estado> {
   return executar(async () => {
@@ -25,8 +28,16 @@ export async function salvarUsuarioEquipe(_: Estado, fd: FormData): Promise<Esta
     const perfil = campoObrigatorio(fd, "perfil", "Perfil") as Perfil;
     if (!PERFIS_EQUIPE.includes(perfil)) throw new ErroValidacao("Perfil inválido.");
     const novo = await criarUsuario({ ...contato, cpf: campoObrigatorio(fd, "cpf", "CPF"), perfil });
+    if (perfil === "motorista") {
+      // Ficha do motorista (a SEMTRANSP completa telefone e CNH depois).
+      const { error } = await (await criarClienteServidor()).from("motoristas").insert({ usuario_id: novo.id });
+      if (error) {
+        await criarClienteAdmin().auth.admin.deleteUser(novo.id);
+        throw error;
+      }
+    }
     revalidatePath("/painel/usuarios");
-    return { ok: `Usuário criado. Senha provisória: ${novo.senha}` };
+    return { ok: `Usuário criado. Senha provisória: ${novo.senha} — anote e entregue à pessoa (ela troca no primeiro acesso).` };
   });
 }
 
