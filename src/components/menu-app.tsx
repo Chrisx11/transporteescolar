@@ -16,6 +16,7 @@ import {
   ScanLine,
   X,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Avatar, cx } from "@/components/ui";
 import { useInstalacao } from "@/lib/instalacao";
 import { PainelInstalar, type QualApp } from "./instalar-app";
@@ -39,8 +40,21 @@ export function MenuApp({ app, nome, perfil, naoLidos }: { app: QualApp; nome: s
   const [aberto, setAberto] = useState(false);
   const [tela, setTela] = useState<"menu" | "instalar">("menu");
   const caminho = usePathname();
-  const { plataforma } = useInstalacao();
+  const { plataforma, instalar } = useInstalacao();
   const instalado = plataforma === "instalado";
+
+  /** Onde o navegador permite (Android, computador), já abre a janela de instalação; senão, o passo a passo. */
+  async function baixar() {
+    if (plataforma === "pronto") {
+      const ok = await instalar();
+      if (ok) {
+        toast.success("App instalado! Procure o ícone na tela do seu celular.");
+        setAberto(false);
+      }
+      return;
+    }
+    setTela("instalar");
+  }
   const botao = useRef<HTMLButtonElement>(null);
   const painel = useRef<HTMLDivElement>(null);
 
@@ -54,7 +68,10 @@ export function MenuApp({ app, nome, perfil, naoLidos }: { app: QualApp; nome: s
 
   // Outros pontos do app (ex.: o convite na tela inicial) abrem direto o "Baixar o app".
   useEffect(() => {
-    const abrirInstalar = () => abrir("instalar");
+    const abrirInstalar = () => {
+      if (window.__eventoInstalar) return; // o convite já abriu a instalação direto
+      abrir("instalar");
+    };
     window.addEventListener("abrir-instalar-app", abrirInstalar);
     return () => window.removeEventListener("abrir-instalar-app", abrirInstalar);
   }, []);
@@ -178,7 +195,7 @@ export function MenuApp({ app, nome, perfil, naoLidos }: { app: QualApp; nome: s
                 ) : (
                   <button
                     type="button"
-                    onClick={() => setTela("instalar")}
+                    onClick={() => void baixar()}
                     className="group flex items-center gap-3 rounded-2xl bg-gradient-to-br from-azul-600 to-azul-800 p-4 text-left text-white shadow-lg shadow-azul-600/25 transition active:scale-[0.98]"
                   >
                     <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-white/15 ring-1 ring-white/20">
@@ -213,7 +230,7 @@ export function MenuApp({ app, nome, perfil, naoLidos }: { app: QualApp; nome: s
 
 /** Convite discreto na tela inicial para instalar o app (some se instalado ou se o usuário dispensar). */
 export function ConviteInstalar({ app }: { app: QualApp }) {
-  const { plataforma } = useInstalacao();
+  const { plataforma, instalar } = useInstalacao();
   const chave = `convite-instalar-${app}`;
   const [dispensado, setDispensado] = useState(true);
   useEffect(() => {
@@ -244,7 +261,12 @@ export function ConviteInstalar({ app }: { app: QualApp }) {
       </div>
       <button
         type="button"
-        onClick={() => window.dispatchEvent(new Event("abrir-instalar-app"))}
+        onClick={async () => {
+          // Android/computador: abre a instalação do navegador na hora. iPhone e outros: o passo a passo.
+          if (plataforma === "pronto") {
+            if (await instalar()) toast.success("App instalado! Procure o ícone na tela do seu celular.");
+          } else window.dispatchEvent(new Event("abrir-instalar-app"));
+        }}
         className="h-9 shrink-0 rounded-xl bg-azul-600 px-3 text-sm font-semibold text-white active:scale-95"
       >
         Baixar
