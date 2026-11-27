@@ -14,6 +14,7 @@ import {
   LogOut,
   Menu,
   ScanLine,
+  UserRound,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -28,6 +29,7 @@ const ITENS: Record<QualApp, Item[]> = {
     { href: "/app", rotulo: "Minhas viagens", icone: CalendarCheck, exato: true },
     { href: "/app/ler-qr", rotulo: "Ler QR code do ônibus", icone: ScanLine },
     { href: "/app/avisos", rotulo: "Avisos", icone: Bell },
+    { href: "/app/meus-dados", rotulo: "Meus dados", icone: UserRound },
   ],
   motorista: [{ href: "/app/motorista", rotulo: "Minhas viagens", icone: Bus }],
 };
