@@ -30,6 +30,31 @@ export async function reservarViagem(
   }
 }
 
+/**
+ * Reserva a ida e, em seguida, a volta escolhida (se houver). Se a ida der certo
+ * e a volta não, a ida fica reservada e o erro da volta volta como aviso.
+ */
+export async function reservarIdaEVolta(
+  ida: { viagem: string; embarque: string | null; desembarque: string | null },
+  volta: { viagem: string; embarque: string | null; desembarque: string | null } | null,
+): Promise<{ ok: true; erroVolta?: string } | { ok: false; erro: string }> {
+  try {
+    await sessaoComPerfil("aluno");
+    const supabase = await criarClienteServidor();
+    const r = await supabase.rpc("reservar", { p_viagem: ida.viagem, p_ponto_embarque: ida.embarque, p_ponto_desembarque: ida.desembarque });
+    if (r.error) return { ok: false, erro: mensagemErro(r.error) };
+    let erroVolta: string | undefined;
+    if (volta) {
+      const v = await supabase.rpc("reservar", { p_viagem: volta.viagem, p_ponto_embarque: volta.embarque, p_ponto_desembarque: volta.desembarque });
+      if (v.error) erroVolta = mensagemErro(v.error);
+    }
+    revalidatePath("/app");
+    return { ok: true, erroVolta };
+  } catch (e) {
+    return { ok: false, erro: (e as Error).message };
+  }
+}
+
 export type RespostaEmbarque =
   | { ok: true; mensagem: string; prefixo: string | null; viagem: string; verificado: boolean }
   | { ok: false; erro: string };

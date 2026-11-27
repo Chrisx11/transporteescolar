@@ -21,7 +21,7 @@ import { Botao, BotaoLink, Selecao, Selo, cx } from "@/components/ui";
 import { useConfirmacao } from "@/components/confirmacao";
 import { CIDADES_CURTO } from "@/lib/rotulos";
 import { RESULTADOS, tempoRestante, type MinhaViagem, type PontoOpcao } from "@/lib/viagens";
-import { cancelarReserva, reservarViagem } from "./acoes";
+import { cancelarReserva, reservarIdaEVolta, reservarViagem } from "./acoes";
 
 const HORA = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
 const DIA_HORA = new Intl.DateTimeFormat("pt-BR", {
@@ -46,12 +46,14 @@ function useAgora() {
   return agora;
 }
 
-export function CartaoViagem({ v, pontos }: { v: MinhaViagem; pontos: PontoOpcao[] }) {
+export function CartaoViagem({ v, pontos, voltas = [] }: { v: MinhaViagem; pontos: PontoOpcao[]; voltas?: MinhaViagem[] }) {
   const router = useRouter();
   const agora = useAgora();
   const [pendente, iniciar] = useTransition();
   const [janela, confirmar] = useConfirmacao();
   const [escolhendo, setEscolhendo] = useState(false);
+  // Ida nova com voltas disponíveis: depois dos pontos da ida, o aluno escolhe a volta.
+  const [pontosIda, setPontosIda] = useState<{ embarque: string | null; desembarque: string | null } | null>(null);
   const ida = v.sentido === "ida";
   const Icone = ida ? ArrowUpRight : ArrowDownLeft;
   const saida = new Date(v.saida_em);
@@ -78,6 +80,27 @@ export function CartaoViagem({ v, pontos }: { v: MinhaViagem; pontos: PontoOpcao
       if (r.ok) {
         lembrarPontos(v.sentido, v.cidade, embarque, desembarque);
         toast.success(trocando ? "Pontos atualizados." : `${v.nome} reservada!`);
+        setEscolhendo(false);
+      } else toast.error(r.erro);
+      router.refresh();
+    });
+  }
+
+  const escolheVolta = !reservado && voltas.length > 0;
+
+  function reservarComVolta(volta: MinhaViagem | null, embarque: string | null, desembarque: string | null) {
+    if (!v.viagem_dia_id || !pontosIda) return;
+    iniciar(async () => {
+      const r = await reservarIdaEVolta(
+        { viagem: v.viagem_dia_id!, ...pontosIda },
+        volta?.viagem_dia_id ? { viagem: volta.viagem_dia_id, embarque, desembarque } : null,
+      );
+      if (r.ok) {
+        lembrarPontos(v.sentido, v.cidade, pontosIda.embarque, pontosIda.desembarque);
+        if (volta) lembrarPontos("volta", volta.cidade, embarque, desembarque);
+        if (r.erroVolta) toast.warning(`Ida reservada, mas a volta não: ${r.erroVolta}`);
+        else toast.success(volta ? `Ida e volta reservadas! Volta às ${HORA.format(new Date(volta.saida_em))}.` : `${v.nome} reservada!`);
+        setPontosIda(null);
         setEscolhendo(false);
       } else toast.error(r.erro);
       router.refresh();
@@ -135,16 +158,18 @@ export function CartaoViagem({ v, pontos }: { v: MinhaViagem; pontos: PontoOpcao
       <div className="border-t border-slate-100 bg-slate-50/60 px-5 py-4">
         {cancelada ? (
           <Faixa icone={Ban} cor="text-red-600" titulo="Viagem cancelada" texto="Veja os avisos para saber o motivo." />
+        ) : escolhendo && escolheVolta && pontosIda ? (
+          <EscolherVolta voltas={voltas} pontos={pontos} pendente={pendente} aoConfirmar={reservarComVolta} aoVoltar={() => setPontosIda(null)} />
         ) : escolhendo ? (
           <EscolherPontos
             pontos={pontos}
             cidadeEmbarque={cidadeEmbarque}
             cidadeDesembarque={cidadeDesembarque}
             linha={v.cidade as "campos" | "itaperuna"}
-            inicial={lembrados(v.sentido, v.cidade, v.ponto_embarque_id, v.ponto_desembarque_id)}
-            rotulo={reservado ? "Salvar pontos" : "Confirmar reserva"}
+            inicial={pontosIda ? { embarque: pontosIda.embarque ?? "", desembarque: pontosIda.desembarque ?? "" } : lembrados(v.sentido, v.cidade, v.ponto_embarque_id, v.ponto_desembarque_id)}
+            rotulo={reservado ? "Salvar pontos" : escolheVolta ? "Continuar: escolher a volta" : "Confirmar reserva"}
             pendente={pendente}
-            aoConfirmar={reservar}
+            aoConfirmar={escolheVolta ? (embarque, desembarque) => setPontosIda({ embarque, desembarque }) : reservar}
             aoCancelar={() => setEscolhendo(false)}
           />
         ) : reservado && v.pode_cancelar ? (
@@ -330,6 +355,87 @@ function EscolherPontos({
           {pendente ? <Loader2 className="animate-spin" /> : <TicketCheck />} {rotulo}
         </Botao>
       </div>
+    </div>
+  );
+}
+
+/** Segundo passo da reserva da ida: escolher a volta do mesmo dia (ou nenhuma) e os pontos dela. */
+function EscolherVolta({
+  voltas,
+  pontos,
+  pendente,
+  aoConfirmar,
+  aoVoltar,
+}: {
+  voltas: MinhaViagem[];
+  pontos: PontoOpcao[];
+  pendente: boolean;
+  aoConfirmar: (volta: MinhaViagem | null, embarque: string | null, desembarque: string | null) => void;
+  aoVoltar: () => void;
+}) {
+  const [escolha, setEscolha] = useState<string>(voltas.length === 1 ? voltas[0].viagem_dia_id! : "");
+  const volta = voltas.find((x) => x.viagem_dia_id === escolha) ?? null;
+
+  const opcao = (chave: string, titulo: string, texto: string) => (
+    <button
+      key={chave}
+      type="button"
+      onClick={() => setEscolha(chave)}
+      className={cx(
+        "flex items-center gap-3 rounded-xl px-3 py-2.5 text-left ring-1 transition-colors",
+        escolha === chave ? "bg-emerald-50 ring-2 ring-emerald-500" : "bg-white ring-slate-200 hover:bg-slate-50",
+      )}
+    >
+      <span className={cx("flex size-5 shrink-0 items-center justify-center rounded-full ring-2", escolha === chave ? "bg-emerald-500 ring-emerald-500" : "ring-slate-300")}>
+        {escolha === chave && <span className="size-2 rounded-full bg-white" />}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-semibold text-slate-900">{titulo}</span>
+        <span className="block text-xs text-slate-500">{texto}</span>
+      </span>
+    </button>
+  );
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <ArrowDownLeft className="size-5 text-emerald-600" />
+        <p className="text-sm font-semibold text-slate-900">Agora escolha a sua volta</p>
+      </div>
+      <div className="flex flex-col gap-2">
+        {voltas.map((x) =>
+          opcao(
+            x.viagem_dia_id!,
+            `${x.nome} · ${HORA.format(new Date(x.saida_em))}`,
+            `${CIDADES_CURTO[x.cidade]} → Italva${x.prazo_em ? ` · reserva até ${HORA.format(new Date(x.prazo_em))}` : ""}`,
+          ),
+        )}
+        {opcao("nenhuma", "Não vou precisar de volta", "Você pode reservar a volta depois, dentro do prazo.")}
+      </div>
+
+      {volta ? (
+        <EscolherPontos
+          key={escolha}
+          pontos={pontos}
+          cidadeEmbarque={volta.cidade}
+          cidadeDesembarque="italva"
+          linha={volta.cidade as "campos" | "itaperuna"}
+          inicial={lembrados("volta", volta.cidade, null, null)}
+          rotulo="Confirmar ida e volta"
+          pendente={pendente}
+          aoConfirmar={(embarque, desembarque) => aoConfirmar(volta, embarque, desembarque)}
+          aoCancelar={aoVoltar}
+        />
+      ) : (
+        <div className="flex gap-2">
+          <Botao variante="secundario" onClick={aoVoltar} disabled={pendente} className="h-11 flex-1">
+            Voltar
+          </Botao>
+          <Botao onClick={() => aoConfirmar(null, null, null)} disabled={pendente || escolha !== "nenhuma"} className="h-11 flex-[2]">
+            {pendente ? <Loader2 className="animate-spin" /> : <TicketCheck />} Confirmar só a ida
+          </Botao>
+        </div>
+      )}
     </div>
   );
 }
