@@ -23,6 +23,7 @@ type ViagemModelo = {
   condicional: boolean;
   bloqueia_ao_lotar: boolean;
   km_estimado: number | null;
+  km_retorno_vazio: number;
   ativa: boolean;
 };
 
@@ -88,7 +89,10 @@ export default async function PaginaViagens({ searchParams }: { searchParams: Pr
                         </td>
                         <td>{textoPrazo(v)}</td>
                         <td className="whitespace-nowrap text-xs text-slate-600">{textoDias(v.dias_semana)}</td>
-                        <td>{v.km_estimado ?? <span className="text-xs text-amber-700">preencher</span>}</td>
+                        <td className="whitespace-nowrap">
+                          {v.km_estimado ?? <span className="text-xs text-amber-700">preencher</span>}
+                          {v.km_retorno_vazio > 0 && <span className="block text-xs text-slate-500">+ {v.km_retorno_vazio} vazio</span>}
+                        </td>
                         <td>
                           <div className="flex items-start gap-2">
                             <LinkAcao icone={Pencil} href={`/painel/viagens?editar=${v.id}`}>Editar</LinkAcao>
@@ -185,9 +189,14 @@ export default async function PaginaViagens({ searchParams }: { searchParams: Pr
                 ))}
               </div>
             </fieldset>
-            <Campo rotulo="Km estimado (para relatórios)">
-              <Entrada name="km_estimado" inputMode="decimal" defaultValue={atual?.km_estimado ?? ""} />
-            </Campo>
+            <div className="grid grid-cols-2 gap-3">
+              <Campo rotulo="Km da viagem">
+                <Entrada name="km_estimado" inputMode="decimal" defaultValue={atual?.km_estimado ?? ""} />
+              </Campo>
+              <Campo rotulo="Km do retorno vazio" ajuda="Ex.: a ida da manhã volta vazia a Italva.">
+                <Entrada name="km_retorno_vazio" inputMode="decimal" defaultValue={atual?.km_retorno_vazio || ""} placeholder="0" />
+              </Campo>
+            </div>
             <div className="flex flex-col gap-2 text-sm">
               <label className="flex items-center gap-2">
                 <input type="checkbox" name="condicional" defaultChecked={atual?.condicional} className="size-4 accent-azul-600" />

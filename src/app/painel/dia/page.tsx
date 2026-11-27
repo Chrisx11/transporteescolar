@@ -29,6 +29,7 @@ import { CIDADES, type Cidade } from "@/lib/rotulos";
 import { DIAS_SEMANA, dataBR, diaSemanaIso, hojeSP, somarDias } from "@/lib/tempo";
 import { STATUS_VIAGEM, tempoRestante } from "@/lib/viagens";
 import { carregarDia, type ViagemDoDia } from "./dados";
+import { AlertasSemtransp } from "../alertas-semtransp";
 import { TempoReal } from "./tempo-real";
 import {
   adicionarOnibusDia,
@@ -454,6 +455,8 @@ export default async function PainelDoDia({ searchParams }: { searchParams: Prom
       >
         Painel do dia
       </Titulo>
+
+      <AlertasSemtransp />
 
       <div className="mb-6 flex flex-wrap items-center gap-2">
         <div className="flex gap-1 rounded-xl bg-slate-100 p-1">

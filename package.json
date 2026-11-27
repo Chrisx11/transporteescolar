@@ -17,6 +17,7 @@
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.58.0",
     "clsx": "^2.1.1",
+    "exceljs": "4.4.0",
     "jsqr": "1.4.0",
     "lucide-react": "^1.61.0",
     "motion": "^14.6.0",
@@ -43,7 +44,6 @@
     "@types/web-push": "3.6.4",
     "eslint": "^9",
     "eslint-config-next": "15.5.29",
-    "exceljs": "^4.4.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^3.2.4"

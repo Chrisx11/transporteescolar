@@ -16,6 +16,7 @@ export async function salvarViagemModelo(_: Estado, fd: FormData): Promise<Estad
     if (dias.length === 0) throw new ErroValidacao("Marque pelo menos um dia da semana.");
 
     const km = campo(fd, "km_estimado");
+    const kmVazio = campo(fd, "km_retorno_vazio");
     const dados = {
       cidade: campoObrigatorio(fd, "cidade", "Cidade"),
       nome: campoObrigatorio(fd, "nome", "Nome"),
@@ -28,6 +29,7 @@ export async function salvarViagemModelo(_: Estado, fd: FormData): Promise<Estad
       condicional,
       bloqueia_ao_lotar: sentido === "volta" && fd.get("bloqueia_ao_lotar") === "on",
       km_estimado: km === null ? null : Number(km.replace(",", ".")),
+      km_retorno_vazio: kmVazio === null ? 0 : Number(kmVazio.replace(",", ".")),
       ativa: fd.get("ativa") === "on",
     };
     if (dados.prazo_tipo === "mesmo_dia" && dados.prazo_hora && dados.prazo_hora >= dados.hora_saida) {

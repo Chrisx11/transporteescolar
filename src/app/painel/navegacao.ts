@@ -1,5 +1,7 @@
 import {
   Activity,
+  BarChart3,
+  History,
   Bus,
   CalendarDays,
   CalendarRange,
@@ -35,6 +37,8 @@ export const MENU: GrupoMenu[] = [
       { href: "/painel/viagens", rotulo: "Viagens modelo", icone: Route },
       { href: "/painel/escala", rotulo: "Escala semanal", icone: CalendarRange },
       { href: "/painel/faltas", rotulo: "Faltas", icone: UserX },
+      { href: "/painel/relatorios", rotulo: "Relatórios", icone: BarChart3 },
+      { href: "/painel/auditoria", rotulo: "Auditoria", icone: History },
       { href: "/painel/parametros", rotulo: "Parâmetros", icone: SlidersHorizontal },
     ],
   },
@@ -46,6 +50,8 @@ export const MENU: GrupoMenu[] = [
       { href: "/painel/pedidos-passe", rotulo: "Pedidos de passe", icone: UserRoundPlus },
       { href: "/painel/solicitacoes", rotulo: "Justificativas e trocas", icone: FileCheck2 },
       { href: "/painel/faltas", rotulo: "Faltas", icone: UserX },
+      { href: "/painel/relatorios", rotulo: "Relatórios", icone: BarChart3 },
+      { href: "/painel/auditoria", rotulo: "Auditoria", icone: History },
       { href: "/painel/instituicoes", rotulo: "Instituições", icone: School },
       { href: "/painel/calendario", rotulo: "Feriados e recessos", icone: CalendarDays },
     ],
@@ -55,6 +61,7 @@ export const MENU: GrupoMenu[] = [
     perfis: ["admin"],
     itens: [
       { href: "/painel/usuarios", rotulo: "Usuários e senhas", icone: UsersRound },
+      { href: "/painel/auditoria", rotulo: "Auditoria", icone: History },
     ],
   },
 ];
@@ -77,6 +84,8 @@ const ROTULOS: Record<string, string> = {
   usuarios: "Usuários e senhas",
   parametros: "Parâmetros",
   faltas: "Faltas",
+  relatorios: "Relatórios",
+  auditoria: "Auditoria",
   solicitacoes: "Justificativas e trocas",
 };
 

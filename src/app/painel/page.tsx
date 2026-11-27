@@ -17,6 +17,7 @@ import { exigirPerfil } from "@/lib/auth";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { Estatistica } from "@/components/ui";
 import { carregarDia } from "./dia/dados";
+import { AlertasSemtransp } from "./alertas-semtransp";
 import { DIAS_SEMANA, dataBR, diaSemanaIso, hojeSP } from "@/lib/tempo";
 
 async function contar(tabela: string, filtro?: [string, string]) {
@@ -104,6 +105,8 @@ export default async function InicioPainel() {
           )}
         </div>
       </div>
+
+      {veTransp && <AlertasSemtransp excesso />}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {veTransp && (
