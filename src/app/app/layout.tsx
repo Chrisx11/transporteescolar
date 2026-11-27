@@ -1,11 +1,19 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Bell, LogOut } from "lucide-react";
+import { Bell } from "lucide-react";
 import { exigirPerfil } from "@/lib/auth";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { Avatar, Marca } from "@/components/ui";
 import { PERFIS } from "@/lib/rotulos";
 import { TrocarArea } from "@/components/trocar-area";
+import { MenuApp } from "@/components/menu-app";
+
+/** App do aluno (o do motorista troca o manifesto em app/motorista/layout.tsx). */
+export const metadata: Metadata = {
+  manifest: "/manifest-aluno.webmanifest",
+  appleWebApp: { capable: true, title: "Transporte Italva", statusBarStyle: "black-translucent" },
+};
 
 /** Layout de celular (aluno e motorista). */
 export default async function LayoutApp({ children }: { children: React.ReactNode }) {
@@ -35,7 +43,7 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
     <>
     {sessao.admin && <TrocarArea atual={sessao.perfil === "motorista" ? "motorista" : "aluno"} />}
     <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-[#f4f6fb] sm:my-6 sm:min-h-[calc(100dvh-3rem)] sm:overflow-hidden sm:rounded-[2rem] sm:shadow-elevada">
-      <header className="relative overflow-hidden bg-gradient-to-br from-azul-600 via-azul-700 to-azul-900 px-5 pb-16 pt-6 text-white">
+      <header className="relative overflow-hidden bg-gradient-to-br from-azul-600 via-azul-700 to-azul-900 px-5 pb-16 pt-[max(1.5rem,calc(env(safe-area-inset-top)+0.75rem))] text-white">
         <div className="fundo-pontos absolute inset-0 opacity-50" aria-hidden />
         <div className="absolute -right-12 -top-12 size-48 rounded-full bg-destaque-400/25 blur-3xl" aria-hidden />
         <div className="relative flex items-center justify-between">
@@ -56,14 +64,12 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
                 </span>
               )}
             </Link>
-            <form action="/auth/sair" method="post">
-              <button
-                className="flex size-10 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/15 transition hover:bg-white/20"
-                aria-label="Sair"
-              >
-                <LogOut className="size-4" />
-              </button>
-            </form>
+            <MenuApp
+              app={sessao.perfil === "motorista" ? "motorista" : "aluno"}
+              nome={sessao.nome}
+              perfil={PERFIS[sessao.perfil]}
+              naoLidos={naoLidos}
+            />
           </div>
         </div>
         <div className="relative mt-6 flex items-center gap-3">
@@ -77,7 +83,7 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
           </span>
         </div>
       </header>
-      <main className="relative -mt-10 flex-1 animate-surgir px-4 pb-8">{children}</main>
+      <main className="relative -mt-10 flex-1 animate-surgir px-4 pb-[max(2rem,env(safe-area-inset-bottom))]">{children}</main>
     </div>
     </>
   );

@@ -277,7 +277,7 @@ export function TelaTrecho({ vdo }: { vdo: string }) {
   const previa = v?.status === "agendada" || alunos.some((a) => a.previa);
 
   return (
-    <div className="flex flex-col gap-4 pb-24">
+    <div className="flex flex-col gap-4 pb-28">
       {janela}
       <Link href="/app/motorista" className="flex items-center gap-1 text-sm font-medium text-azul-100">
         <ArrowLeft className="size-4" /> Minhas viagens
@@ -408,7 +408,7 @@ export function TelaTrecho({ vdo }: { vdo: string }) {
       )}
 
       {!encerrado && (
-        <div className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-md bg-gradient-to-t from-[#f4f6fb] via-[#f4f6fb] to-transparent p-4 pt-8">
+        <div className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-md bg-gradient-to-t from-[#f4f6fb] via-[#f4f6fb] to-transparent p-4 pt-8 pb-[max(1rem,env(safe-area-inset-bottom))]">
           {emAndamento ? (
             <Botao variante="perigo" className="h-14 w-full text-base" onClick={() => void encerrar()} disabled={ocupado}>
               {ocupado ? <Loader2 className="animate-spin" /> : <Square />} Encerrar {v?.sentido === "ida" ? "ida" : "viagem"}

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { Eye, EyeOff, IdCard, Loader2, LockKeyhole, LogIn, Mail } from "lucide-react";
+import { Download, Eye, EyeOff, IdCard, Loader2, LockKeyhole, LogIn, Mail } from "lucide-react";
 import { Aviso, Botao, Campo, Entrada, cx } from "@/components/ui";
 import { VISUAL_PERFIL } from "@/components/perfis-visual";
 import { mascaraCpf } from "@/lib/mascaras";
@@ -129,6 +129,14 @@ export function FormLogin({ area }: { area: Perfil }) {
       <Link href="/esqueci-senha" className="text-center text-sm font-medium text-azul-700 hover:underline">
         Esqueci minha senha
       </Link>
+      {(area === "aluno" || area === "motorista") && (
+        <Link
+          href={area === "motorista" ? "/instalar?app=motorista" : "/instalar"}
+          className="flex items-center justify-center gap-2 rounded-xl bg-azul-50 py-2.5 text-sm font-semibold text-azul-800 ring-1 ring-azul-100 hover:bg-azul-100"
+        >
+          <Download className="size-4" /> Baixar o app no celular
+        </Link>
+      )}
       {area === "aluno" && (
         <div className="flex flex-col gap-1.5 border-t border-slate-100 pt-4 text-center text-sm text-slate-600">
           <span>

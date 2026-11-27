@@ -7,6 +7,7 @@ import { DIAS_SEMANA, dataBR, diaSemanaIso, hojeSP } from "@/lib/tempo";
 import { CIDADES_CURTO, SENTIDOS, type Cidade, type Sentido } from "@/lib/rotulos";
 import { STATUS_VIAGEM, type StatusViagem } from "@/lib/viagens";
 import { AtualizarSozinho } from "./atualizar-sozinho";
+import { ConviteInstalar } from "@/components/menu-app";
 
 type Linha = {
   id: string;
@@ -52,6 +53,7 @@ export default async function InicioMotorista() {
   return (
     <div className="flex flex-col gap-4">
       <AtualizarSozinho />
+      <ConviteInstalar app="motorista" />
       <div className="flex items-center gap-3 rounded-2xl bg-white p-4 shadow-elevada">
         <span className="flex size-11 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
           <CalendarCheck className="size-5" />

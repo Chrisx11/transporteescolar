@@ -10,7 +10,7 @@ const DESTAQUES = [
 /** Telas de acesso: painel institucional à esquerda (computador) e formulário à direita. */
 export default function LayoutAuth({ children }: { children: React.ReactNode }) {
   return (
-    <div className="grid min-h-dvh lg:grid-cols-[1.05fr_1fr]">
+    <div className="grid min-h-dvh pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] lg:grid-cols-[1.05fr_1fr] lg:pt-0 lg:pb-0">
       <aside className="relative hidden overflow-hidden bg-gradient-to-br from-azul-700 via-azul-800 to-azul-950 p-12 text-white lg:flex lg:flex-col">
         <div className="fundo-pontos absolute inset-0" aria-hidden />
         <div className="absolute -right-24 -top-24 size-96 rounded-full bg-azul-400/30 blur-3xl" aria-hidden />

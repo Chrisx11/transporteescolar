@@ -8,6 +8,7 @@ import { DIAS_SEMANA, dataBR, diaSemanaIso, hojeSP, somarDias } from "@/lib/temp
 import type { MinhaViagem, PontoOpcao } from "@/lib/viagens";
 import { CartaoViagem } from "./cartao-viagem";
 import { SecaoVoltas } from "./secao-voltas";
+import { ConviteInstalar } from "@/components/menu-app";
 
 /**
  * Tela inicial do aluno: viagens de Hoje (e de Amanhã, quando a reserva já
@@ -67,6 +68,8 @@ export default async function HojeAluno({ searchParams }: { searchParams: Promis
           )}
         </div>
       </div>
+
+      <ConviteInstalar app="aluno" />
 
       {aluno?.situacao === "pendente" && <Aviso tipo="alerta">Seu cadastro está em análise pela Secretaria de Educação.</Aviso>}
       {aluno?.situacao === "inativo" && <Aviso tipo="erro">Seu cadastro está inativo. Procure a Secretaria de Educação.</Aviso>}
