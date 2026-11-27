@@ -387,11 +387,25 @@ export default async function PainelDoDia({ searchParams }: { searchParams: Prom
   const data = pedida && /^\d{4}-\d{2}-\d{2}$/.test(pedida) ? pedida : hoje;
 
   const supabase = await criarClienteServidor();
-  const [viagens, { data: onibus }, { data: motoristas }] = await Promise.all([
+  const [viagens, { data: onibus }, { data: motoristas }, { data: lib2030 }] = await Promise.all([
     carregarDia(data),
     supabase.from("onibus").select("id, prefixo, placa, capacidade, situacao").eq("situacao", "ativo").order("placa"),
     supabase.from("motoristas").select("usuario_id, usuario:usuarios(nome, ativo)"),
+    // Volta 20:30 de Itaperuna liberada por um motorista (Fase 4).
+    supabase
+      .from("liberacoes_2030")
+      .select("status, vagas_minimas, saida_em, onibus:onibus(prefixo), quem:usuarios(nome), reservas:reservas_2030(status)")
+      .eq("data", data)
+      .maybeSingle(),
   ]);
+  const volta2030 = lib2030 as unknown as {
+    status: "aberta" | "confirmada" | "cancelada";
+    vagas_minimas: number;
+    saida_em: string;
+    onibus: { prefixo: string } | null;
+    quem: { nome: string } | null;
+    reservas: { status: string }[];
+  } | null;
 
   const opcoesOnibus: Opcao[] = (onibus ?? []).map((o) => ({ id: o.id, rotulo: `${o.placa} (${o.capacidade} lugares)` }));
   const opcoesMotoristas: Opcao[] = ((motoristas ?? []) as unknown as { usuario_id: string; usuario: { nome: string; ativo: boolean } }[])
@@ -503,6 +517,22 @@ export default async function PainelDoDia({ searchParams }: { searchParams: Prom
               ))}
             </div>
           </div>
+
+          {cidade === "itaperuna" && volta2030 && (
+            <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl bg-violet-50 px-4 py-3 text-sm text-violet-900 ring-1 ring-violet-200">
+              <span className="font-semibold">Volta 20:30</span>
+              <span>
+                liberada por {volta2030.quem?.nome ?? "motorista"} · ônibus {volta2030.onibus?.prefixo} · mínimo {volta2030.vagas_minimas}
+              </span>
+              <span className="ml-auto font-semibold">
+                {volta2030.status === "aberta"
+                  ? `${volta2030.reservas.filter((r) => r.status === "aguardando").length} de ${volta2030.vagas_minimas} reservaram`
+                  : volta2030.status === "confirmada"
+                    ? "Confirmada (aparece na tabela)"
+                    : "Cancelada: não completou o mínimo"}
+              </span>
+            </div>
+          )}
 
           {daCidade.length === 0 ? (
             <Vazio icone={Bus}>Nenhuma viagem de {CIDADES[cidade]} em {dataBR(data)}.</Vazio>

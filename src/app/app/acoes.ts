@@ -86,3 +86,32 @@ export async function cancelarReserva(reservaId: string): Promise<Resultado> {
     return { ok: false, erro: (e as Error).message };
   }
 }
+
+/** Volta 20:30 de Itaperuna: entra na lista (continua na 22:00 até confirmar). */
+export async function reservarVolta2030(): Promise<{ ok: true; confirmada: boolean; faltam?: number } | { ok: false; erro: string }> {
+  try {
+    await sessaoComPerfil("aluno");
+    const supabase = await criarClienteServidor();
+    const { data, error } = await supabase.rpc("reservar_volta_2030");
+    if (error) return { ok: false, erro: mensagemErro(error) };
+    revalidatePath("/app");
+    const r = data as { confirmada: boolean; faltam?: number };
+    return { ok: true, confirmada: r.confirmada, faltam: r.faltam };
+  } catch (e) {
+    return { ok: false, erro: (e as Error).message };
+  }
+}
+
+/** Volta 20:30: sai da lista antes de confirmar (continua na 22:00). */
+export async function desistirVolta2030(): Promise<Resultado> {
+  try {
+    await sessaoComPerfil("aluno");
+    const supabase = await criarClienteServidor();
+    const { error } = await supabase.rpc("desistir_volta_2030");
+    if (error) return { ok: false, erro: mensagemErro(error) };
+    revalidatePath("/app");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, erro: (e as Error).message };
+  }
+}

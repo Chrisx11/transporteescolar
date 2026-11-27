@@ -8,6 +8,7 @@ import { CIDADES_CURTO, SENTIDOS, type Cidade, type Sentido } from "@/lib/rotulo
 import { STATUS_VIAGEM, type StatusViagem } from "@/lib/viagens";
 import { AtualizarSozinho } from "./atualizar-sozinho";
 import { ConviteInstalar } from "@/components/menu-app";
+import { Volta2030, type InfoVolta2030 } from "./volta-2030";
 
 type Linha = {
   id: string;
@@ -35,6 +36,8 @@ export default async function InicioMotorista() {
     .select("id, onibus(prefixo, capacidade), viagem:viagens_dia!inner(id, nome, cidade, sentido, saida_em, prazo_em, status, data)")
     .eq("motorista_id", sessao.id)
     .eq("viagem.data", hoje);
+
+  const { data: info2030 } = await supabase.rpc("info_volta_2030");
 
   const linhas = ((data ?? []) as unknown as Linha[])
     .filter((l) => l.viagem)
@@ -65,6 +68,8 @@ export default async function InicioMotorista() {
           </p>
         </div>
       </div>
+
+      {info2030 && <Volta2030 info={info2030 as InfoVolta2030} />}
 
       {linhas.length === 0 ? (
         <Vazio icone={Bus}>Nenhuma viagem na sua escala para hoje.</Vazio>

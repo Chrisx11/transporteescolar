@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, Ban, Bell, Bus, Shuffle } from "lucide-react";
+import { ArrowDownLeft, ArrowLeft, Ban, Bell, Bus, CheckCircle2, Shuffle } from "lucide-react";
 import { exigirPerfil } from "@/lib/auth";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { Vazio, cx } from "@/components/ui";
@@ -12,6 +12,9 @@ const ICONE: Record<string, { icone: typeof Bell; cor: string }> = {
   onibus_atribuido: { icone: Bus, cor: "bg-azul-50 text-azul-600" },
   onibus_alterado: { icone: Shuffle, cor: "bg-amber-50 text-amber-600" },
   viagem_cancelada: { icone: Ban, cor: "bg-red-50 text-red-600" },
+  volta_2030_liberada: { icone: ArrowDownLeft, cor: "bg-violet-50 text-violet-600" },
+  volta_2030_confirmada: { icone: CheckCircle2, cor: "bg-emerald-50 text-emerald-600" },
+  volta_2030_cancelada: { icone: Ban, cor: "bg-slate-100 text-slate-500" },
 };
 
 /** Avisos do aluno. Ao abrir, todos ficam marcados como lidos. */

@@ -9,6 +9,7 @@ import type { MinhaViagem, PontoOpcao } from "@/lib/viagens";
 import { CartaoViagem } from "./cartao-viagem";
 import { SecaoVoltas } from "./secao-voltas";
 import { ConviteInstalar } from "@/components/menu-app";
+import { Volta2030Aluno, type MinhaVolta2030 } from "./volta-2030-aluno";
 
 /**
  * Tela inicial do aluno: viagens de Hoje (e de Amanhã, quando a reserva já
@@ -22,11 +23,12 @@ export default async function HojeAluno({ searchParams }: { searchParams: Promis
   const hoje = hojeSP();
   const amanha = somarDias(hoje, 1);
 
-  const [{ data: aluno }, { data: deHoje }, { data: deAmanha }, { data: pontos }] = await Promise.all([
+  const [{ data: aluno }, { data: deHoje }, { data: deAmanha }, { data: pontos }, { data: volta2030 }] = await Promise.all([
     supabase.from("alunos").select("situacao, matricula_validade").eq("usuario_id", sessao.id).maybeSingle(),
     supabase.rpc("minhas_viagens", { p_data: hoje }),
     supabase.rpc("minhas_viagens", { p_data: amanha }),
     supabase.from("pontos").select("id, nome, cidade, ordem, linha").eq("ativo", true).order("ordem").order("nome"),
+    supabase.rpc("minha_volta_2030"),
   ]);
 
   const listaAmanha = (deAmanha ?? []) as MinhaViagem[];
@@ -78,6 +80,8 @@ export default async function HojeAluno({ searchParams }: { searchParams: Promis
           Sua matrícula venceu em {dataBR(aluno.matricula_validade)}. Envie um comprovante novo para voltar a reservar.
         </Aviso>
       )}
+
+      {aba === "hoje" && volta2030 && <Volta2030Aluno v={volta2030 as MinhaVolta2030} />}
 
       {lista.length === 0 ? (
         <Vazio icone={CalendarCheck}>
