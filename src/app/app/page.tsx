@@ -94,30 +94,44 @@ export default async function HojeAluno({ searchParams }: { searchParams: Promis
 
 /**
  * Primeiro as idas; ao reservar uma ida, o aluno já escolhe a volta.
- * Voltas reservadas aparecem sempre; as outras ficam recolhidas.
+ * Some o que não dá mais: viagem com prazo encerrado (sem reserva), outra ida
+ * quando já há ida reservada (idem volta), volta antes da ida e ida depois da volta.
+ * As voltas não reservadas ficam recolhidas.
  */
 function ListaDoDia({ lista, data, pontos }: { lista: MinhaViagem[]; data: string; pontos: PontoOpcao[] }) {
   const chave = (v: MinhaViagem) => `${data}-${v.viagem_dia_id ?? v.cidade + v.nome}`;
-  const idas = lista.filter((v) => v.sentido === "ida");
-  const voltas = lista.filter((v) => v.sentido === "volta");
-  const voltasReservadas = voltas.filter((v) => v.reserva_id);
-  const outrasVoltas = voltas.filter((v) => !v.reserva_id);
+  const hora = (v: MinhaViagem) => new Date(v.saida_em).getTime();
+  const idaReservada = lista.find((v) => v.sentido === "ida" && v.reserva_id);
+  const voltaReservada = lista.find((v) => v.sentido === "volta" && v.reserva_id);
+
+  const aparece = (v: MinhaViagem) => {
+    if (v.reserva_id) return true;
+    if (v.motivo === "prazo_encerrado") return false;
+    if (v.sentido === "ida") return !idaReservada && (!voltaReservada || hora(v) < hora(voltaReservada));
+    return !voltaReservada && (!idaReservada || hora(v) > hora(idaReservada));
+  };
+  const visiveis = lista.filter(aparece);
+  const idas = visiveis.filter((v) => v.sentido === "ida");
+  const voltasReservadas = visiveis.filter((v) => v.sentido === "volta" && v.reserva_id);
+  const outrasVoltas = visiveis.filter((v) => v.sentido === "volta" && !v.reserva_id);
   // Voltas que ainda dá para reservar (oferecidas junto com a ida).
   const voltasAbertas = outrasVoltas.filter((v) => !v.motivo && v.viagem_dia_id);
-  const idaReservada = idas.some((v) => v.reserva_id);
   const idaDisponivel = idas.some((v) => !v.motivo && !v.reserva_id);
-  const abrirVoltas = (idaReservada && voltasReservadas.length === 0) || (!idaReservada && !idaDisponivel) || idas.length === 0;
+  const abrirVoltas = (!!idaReservada && !voltaReservada) || (!idaReservada && !idaDisponivel) || idas.length === 0;
+
+  if (visiveis.length === 0)
+    return <Vazio icone={CalendarX2}>O prazo de reserva das viagens deste dia já encerrou.</Vazio>;
 
   return (
     <>
       {idas.map((v) => (
-        <CartaoViagem key={chave(v)} v={v} pontos={pontos} voltas={voltasAbertas.filter((x) => x.cidade === v.cidade && x.saida_em > v.saida_em)} />
+        <CartaoViagem key={chave(v)} v={v} pontos={pontos} voltas={voltasAbertas.filter((x) => x.cidade === v.cidade && hora(x) > hora(v))} />
       ))}
       {voltasReservadas.map((v) => (
         <CartaoViagem key={chave(v)} v={v} pontos={pontos} />
       ))}
       {outrasVoltas.length > 0 && (
-        <SecaoVoltas abertaInicial={abrirVoltas} titulo={idaReservada && voltasReservadas.length === 0 ? "Escolha sua volta" : "Volta"}>
+        <SecaoVoltas abertaInicial={abrirVoltas} titulo={idaReservada && !voltaReservada ? "Escolha sua volta" : "Volta"}>
           {outrasVoltas.map((v) => (
             <CartaoViagem key={chave(v)} v={v} pontos={pontos} />
           ))}
