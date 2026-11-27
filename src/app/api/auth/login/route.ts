@@ -17,7 +17,7 @@ const ERRO_GENERICO = "CPF ou senha incorretos.";
  * revelar quais CPFs estão cadastrados.
  */
 export async function POST(req: NextRequest) {
-  let corpo: { cpf?: string; email?: string; senha?: string; perfil?: string };
+  let corpo: { cpf?: string; email?: string; senha?: string; perfil?: string; telefone4?: string; nascimento?: string };
   try {
     corpo = await req.json();
   } catch {
@@ -82,6 +82,27 @@ export async function POST(req: NextRequest) {
     await registrar(false);
     return NextResponse.json({ erro: porEmail ? "E-mail ou senha incorretos." : ERRO_GENERICO }, { status: 401 });
   }
+  // Primeiro acesso do aluno (senha = CPF): o CPF não é segredo, então ele confirma
+  // também os 4 últimos números do telefone cadastrado (ou a data de nascimento).
+  if (usuario.perfil === "aluno" && usuario.troca_senha_obrigatoria && senha === cpf) {
+    const conferido = await conferirPrimeiroAcesso(admin, usuario.id, corpo.telefone4, corpo.nascimento);
+    if (conferido !== "ok") {
+      await supabase.auth.signOut();
+      await registrar(false);
+      return NextResponse.json(
+        {
+          primeiroAcesso: true,
+          erro:
+            conferido === "sem_dados"
+              ? "Não há telefone nem data de nascimento no seu cadastro. Procure a Secretaria de Educação para receber uma senha."
+              : corpo.telefone4 || corpo.nascimento
+                ? "Os dados não conferem com o seu cadastro. Use o telefone (WhatsApp) que você informou no pedido do passe."
+                : "Primeiro acesso: confirme seus dados na página Primeiro acesso.",
+        },
+        { status: 401 },
+      );
+    }
+  }
   await registrar(true);
 
   // Cada página de login aceita só o próprio perfil (o Admin só pela /admin).
@@ -101,4 +122,24 @@ export async function POST(req: NextRequest) {
   if (usuario.perfil === "admin") (await cookies()).delete(COOKIE_MODO_ADMIN);
   const destino = usuario.troca_senha_obrigatoria ? "/trocar-senha" : inicioDoPerfil(usuario.perfil as Perfil);
   return NextResponse.json({ destino });
+}
+
+/** Confere o 2º dado do primeiro acesso: 4 últimos números do telefone ou a data de nascimento. */
+async function conferirPrimeiroAcesso(
+  admin: ReturnType<typeof criarClienteAdmin>,
+  id: string,
+  telefone4?: string,
+  nascimento?: string,
+): Promise<"ok" | "nao_confere" | "sem_dados"> {
+  const [{ data: u }, { data: a }] = await Promise.all([
+    admin.from("usuarios").select("telefone").eq("id", id).maybeSingle(),
+    admin.from("alunos").select("data_nascimento").eq("usuario_id", id).maybeSingle(),
+  ]);
+  const fone = (u?.telefone ?? "").replace(/D/g, "");
+  const nasc = a?.data_nascimento ?? null;
+  if (fone.length < 4 && !nasc) return "sem_dados";
+  const digitos = (telefone4 ?? "").replace(/D/g, "");
+  if (fone.length >= 4 && digitos.length === 4 && fone.endsWith(digitos)) return "ok";
+  if (nasc && nascimento && nascimento === nasc) return "ok";
+  return "nao_confere";
 }

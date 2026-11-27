@@ -20,6 +20,7 @@ export function FormLogin({ area }: { area: Perfil }) {
   const [senha, setSenha] = useState("");
   const [verSenha, setVerSenha] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [primeiroAcesso, setPrimeiroAcesso] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const router = useRouter();
   const info = AREAS_LOGIN[area];
@@ -38,6 +39,7 @@ export function FormLogin({ area }: { area: Perfil }) {
       const corpo = await r.json();
       if (!r.ok) {
         setErro(corpo.erro ?? "Não foi possível entrar.");
+        setPrimeiroAcesso(!!corpo.primeiroAcesso);
         setEnviando(false);
         return;
       }
@@ -53,6 +55,11 @@ export function FormLogin({ area }: { area: Perfil }) {
 
   return (
     <form onSubmit={entrar} className="flex flex-col gap-5">
+      {voltar?.startsWith("/embarque/") && (
+        <Aviso tipo="ok">
+          Entre para confirmar o embarque. Se você já instalou o app no celular, é mais rápido abrir o app e tocar em “Ler QR code do ônibus”.
+        </Aviso>
+      )}
       {busca.get("erro") === "link" && <Aviso>O link expirou ou já foi usado. Peça um novo.</Aviso>}
       {busca.get("senha") === "redefinida" && <Aviso tipo="ok">Senha alterada. Entre com a nova senha.</Aviso>}
       <div className="flex items-center gap-4">
@@ -120,7 +127,16 @@ export function FormLogin({ area }: { area: Perfil }) {
         </div>
       </Campo>
 
-      {erro && <Aviso tipo="erro">{erro}</Aviso>}
+      {erro && (
+        <Aviso tipo="erro">
+          {erro}{" "}
+          {primeiroAcesso && (
+            <Link href="/primeiro-acesso" className="font-semibold underline">
+              Ir para o Primeiro acesso
+            </Link>
+          )}
+        </Aviso>
+      )}
 
       <Botao type="submit" disabled={enviando} className="h-12 text-base">
         {enviando ? <Loader2 className="animate-spin" /> : <LogIn />}

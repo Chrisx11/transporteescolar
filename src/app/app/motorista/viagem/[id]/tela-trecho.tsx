@@ -9,6 +9,7 @@ import {
   Bus,
   CheckCircle2,
   Circle,
+  Clock3,
   CloudOff,
   Eye,
   Hand,
@@ -319,6 +320,12 @@ export function TelaTrecho({ vdo }: { vdo: string }) {
             {fila > 0 ? ` ${fila} presença(s) esperando sinal para enviar.` : ""}
           </p>
         )}
+        {!emAndamento && !encerrado && v?.status === "prazo_fechado" && (
+          <p className="mt-3 flex items-center gap-2 rounded-xl bg-amber-50 p-2.5 text-xs text-amber-900">
+            <Navigation className="size-4 shrink-0" />
+            Toque em Iniciar assim que chegar ao ponto: com a viagem iniciada, o QR só vale para quem estiver perto do ônibus.
+          </p>
+        )}
         {emAndamento && (
           <p
             className={cx(
@@ -412,6 +419,11 @@ export function TelaTrecho({ vdo }: { vdo: string }) {
           {emAndamento ? (
             <Botao variante="perigo" className="h-14 w-full text-base" onClick={() => void encerrar()} disabled={ocupado}>
               {ocupado ? <Loader2 className="animate-spin" /> : <Square />} Encerrar {v?.sentido === "ida" ? "ida" : "viagem"}
+            </Botao>
+          ) : v?.status === "agendada" ? (
+            // Lista prévia: só dá para iniciar depois que o prazo fecha e os alunos são colocados nos ônibus.
+            <Botao className="h-14 w-full text-base" disabled>
+              <Clock3 /> {v.prazo_em ? `Iniciar disponível após ${HORA.format(new Date(v.prazo_em))}` : "Aguardando o fechamento da lista"}
             </Botao>
           ) : (
             <Botao className="h-14 w-full text-base" onClick={() => void iniciar()} disabled={ocupado || !online}>

@@ -1,7 +1,6 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { criarClienteAdmin } from "@/lib/supabase/admin";
 import { obterSessao } from "@/lib/auth";
@@ -9,6 +8,7 @@ import { cpfAceito, limparCpf } from "@/lib/cpf";
 import { validarNovaSenha } from "@/lib/senha";
 import { inicioDoPerfil } from "@/lib/rotulos";
 import type { Estado } from "@/lib/acoes";
+import { urlDoSite } from "@/lib/codigo-link";
 
 async function salvarNovaSenha(fd: FormData): Promise<string | null> {
   const senha = String(fd.get("senha") ?? "");
@@ -69,9 +69,8 @@ export async function pedirRecuperacao(_: Estado, fd: FormData): Promise<Estado>
     .maybeSingle();
   if (!usuario?.email || !usuario.ativo) return resposta;
 
-  const h = await headers();
-  const origem =
-    process.env.NEXT_PUBLIC_APP_URL ?? `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host")}`;
+  // Endereço pelo qual o site está sendo usado (o NEXT_PUBLIC_APP_URL pode estar desatualizado).
+  const origem = await urlDoSite();
   const supabase = await criarClienteServidor();
   await supabase.auth.resetPasswordForEmail(usuario.email, {
     redirectTo: `${origem}/auth/callback?proximo=/redefinir-senha`,

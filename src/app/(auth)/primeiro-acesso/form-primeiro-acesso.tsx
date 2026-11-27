@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { IdCard, KeyRound, Loader2, LogIn } from "lucide-react";
+import { CalendarDays, IdCard, KeyRound, Loader2, LogIn, Phone } from "lucide-react";
 import { Aviso, Botao, Campo, Entrada } from "@/components/ui";
 import { mascaraCpf } from "@/lib/mascaras";
 
@@ -14,6 +14,9 @@ import { mascaraCpf } from "@/lib/mascaras";
 export function FormPrimeiroAcesso() {
   const router = useRouter();
   const [cpf, setCpf] = useState("");
+  const [telefone4, setTelefone4] = useState("");
+  const [nascimento, setNascimento] = useState("");
+  const [porNascimento, setPorNascimento] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
@@ -26,7 +29,12 @@ export function FormPrimeiroAcesso() {
       const r = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cpf: digitos, senha: digitos, perfil: "aluno" }),
+        body: JSON.stringify({
+          cpf: digitos,
+          senha: digitos,
+          perfil: "aluno",
+          ...(porNascimento ? { nascimento } : { telefone4 }),
+        }),
       });
       const corpo = await r.json();
       if (r.ok) {
@@ -34,7 +42,7 @@ export function FormPrimeiroAcesso() {
         router.refresh();
         return;
       }
-      if (r.status === 429 || r.status === 400) setErro(corpo.erro);
+      if (r.status === 429 || r.status === 400 || corpo.primeiroAcesso) setErro(corpo.erro);
       else
         setErro(
           "Não foi possível fazer o primeiro acesso com este CPF. Se você já criou sua senha, entre pela página do aluno. " +
@@ -60,7 +68,7 @@ export function FormPrimeiroAcesso() {
       </div>
 
       <ol className="flex flex-col gap-1.5 rounded-xl bg-slate-50 p-4 text-sm text-slate-700 ring-1 ring-slate-100">
-        <li>1. Digite o seu CPF e toque em Entrar.</li>
+        <li>1. Digite o seu CPF e os 4 últimos números do seu telefone, e toque em Entrar.</li>
         <li>2. Crie a sua senha (com letras e números).</li>
         <li>3. Nas próximas vezes, entre pela página do aluno com o CPF e a sua senha.</li>
       </ol>
@@ -79,6 +87,35 @@ export function FormPrimeiroAcesso() {
           />
         </div>
       </Campo>
+
+      {porNascimento ? (
+        <Campo rotulo="Data de nascimento">
+          <div className="relative">
+            <CalendarDays className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+            <Entrada type="date" value={nascimento} onChange={(e) => setNascimento(e.target.value)} className="h-12 pl-10 text-base" required />
+          </div>
+        </Campo>
+      ) : (
+        <Campo rotulo="4 últimos números do seu telefone" ajuda="O telefone (WhatsApp) que você informou no pedido do passe.">
+          <div className="relative">
+            <Phone className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+            <Entrada
+              inputMode="numeric"
+              autoComplete="off"
+              placeholder="0000"
+              maxLength={4}
+              value={telefone4}
+              onChange={(e) => setTelefone4(e.target.value.replace(/D/g, "").slice(0, 4))}
+              className="h-12 pl-10 text-base tracking-[0.3em]"
+              required
+              pattern="\d{4}"
+            />
+          </div>
+        </Campo>
+      )}
+      <button type="button" onClick={() => setPorNascimento((v) => !v)} className="-mt-2 self-start text-sm font-medium text-azul-700 hover:underline">
+        {porNascimento ? "Usar o telefone" : "Não lembro o telefone: usar a data de nascimento"}
+      </button>
 
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
 
