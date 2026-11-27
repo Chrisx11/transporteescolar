@@ -1,0 +1,601 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Manual do Sistema · Transporte Universitário de Italva</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm 18mm 16mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Arial, sans-serif; color: #0f172a; font-size: 10.5pt; line-height: 1.5; margin: 0; }
+  h1, h2, h3, h4 { line-height: 1.25; margin: 0; }
+  p { margin: 0 0 7px; }
+  ul, ol { margin: 0 0 8px; padding-left: 20px; }
+  li { margin: 2px 0; }
+  strong { color: #0b1f4d; }
+  code { font-family: Consolas, monospace; font-size: 9.5pt; background: #eef2ff; padding: 1px 5px; border-radius: 4px; color: #1e3a8a; }
+  a { color: #1d4ed8; text-decoration: none; }
+
+  /* Capa */
+  .capa { height: 257mm; display: flex; flex-direction: column; justify-content: space-between; padding: 26mm 14mm 14mm;
+          background: linear-gradient(150deg, #1d4ed8 0%, #1e3a8a 60%, #0b1f4d 100%); color: #fff; border-radius: 10px; page-break-after: always; }
+  .capa img { width: 72px; height: 72px; border-radius: 18px; box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+  .capa .pre { font-size: 10pt; letter-spacing: 3px; font-weight: 700; color: #bfdbfe; margin-top: 26px; }
+  .capa h1 { font-size: 34pt; margin-top: 10px; font-weight: 800; }
+  .capa .sub { font-size: 14pt; color: #dbeafe; margin-top: 12px; max-width: 150mm; }
+  .capa .rodape { font-size: 10pt; color: #bfdbfe; border-top: 1px solid rgba(255,255,255,.25); padding-top: 10px; display: flex; justify-content: space-between; }
+  .capa .perfis { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 30px; }
+  .capa .perfis span { background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.25); padding: 5px 12px; border-radius: 999px; font-size: 10pt; }
+
+  /* Sumário */
+  .sumario { page-break-after: always; }
+  .sumario h2 { font-size: 20pt; color: #1e3a8a; margin-bottom: 14px; }
+  .sumario ol { padding-left: 0; list-style: none; counter-reset: s; }
+  .sumario > ol > li { counter-increment: s; font-weight: 700; margin: 9px 0 3px; font-size: 11pt; }
+  .sumario > ol > li::before { content: counter(s) ". "; color: #2563eb; }
+  .sumario ol ol { font-weight: 400; font-size: 10pt; color: #334155; padding-left: 22px; list-style: disc; display: grid; grid-template-columns: 1fr 1fr; column-gap: 24px; }
+
+  /* Capítulos */
+  .cap { page-break-before: always; }
+  .cap-titulo { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 10px; color: #fff; margin-bottom: 14px; }
+  .cap-titulo .num { font-size: 26pt; font-weight: 800; opacity: .85; }
+  .cap-titulo h2 { font-size: 19pt; }
+  .cap-titulo p { margin: 2px 0 0; font-size: 10pt; opacity: .9; }
+  .azul { background: linear-gradient(120deg, #2563eb, #1e3a8a); }
+  .verde { background: linear-gradient(120deg, #059669, #065f46); }
+  .laranja { background: linear-gradient(120deg, #d97706, #92400e); }
+  .roxo { background: linear-gradient(120deg, #7c3aed, #4c1d95); }
+  .cinza { background: linear-gradient(120deg, #475569, #1e293b); }
+  .rosa { background: linear-gradient(120deg, #db2777, #831843); }
+
+  h3 { font-size: 13pt; color: #1e3a8a; margin: 16px 0 6px; padding-bottom: 4px; border-bottom: 2px solid #dbeafe; page-break-after: avoid; }
+  h4 { font-size: 11pt; color: #0f172a; margin: 10px 0 4px; page-break-after: avoid; }
+
+  /* Ficha de tela: Para que serve / Como usar / Por que existe */
+  .tela { border: 1px solid #e2e8f0; border-radius: 10px; margin: 10px 0 12px; overflow: hidden; page-break-inside: avoid; }
+  .tela-cab { background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 8px 12px; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .tela-cab b { font-size: 11.5pt; color: #0b1f4d; }
+  .tela-cab .end { font-family: Consolas, monospace; font-size: 8.5pt; color: #64748b; }
+  .tela-corpo { padding: 9px 12px 4px; }
+  .rot { display: inline-block; font-size: 8pt; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; padding: 1px 7px; border-radius: 4px; margin-right: 6px; }
+  .r-serve { background: #dbeafe; color: #1e40af; }
+  .r-usar { background: #dcfce7; color: #166534; }
+  .r-porque { background: #fef3c7; color: #92400e; }
+  .bloco { margin-bottom: 7px; }
+
+  .dica, .atencao { border-radius: 8px; padding: 8px 12px; margin: 8px 0 10px; page-break-inside: avoid; font-size: 10pt; }
+  .dica { background: #eff6ff; border-left: 4px solid #2563eb; }
+  .atencao { background: #fff7ed; border-left: 4px solid #ea580c; }
+
+  table { width: 100%; border-collapse: collapse; margin: 6px 0 12px; font-size: 9.5pt; page-break-inside: auto; }
+  th { background: #1e3a8a; color: #fff; text-align: left; padding: 6px 8px; font-weight: 600; }
+  td { border-bottom: 1px solid #e2e8f0; padding: 5px 8px; vertical-align: top; }
+  tr:nth-child(even) td { background: #f8fafc; }
+  tr { page-break-inside: avoid; }
+
+  .passos { counter-reset: p; list-style: none; padding-left: 0; }
+  .passos li { counter-increment: p; position: relative; padding-left: 28px; margin: 5px 0; }
+  .passos li::before { content: counter(p); position: absolute; left: 0; top: 0; width: 20px; height: 20px; border-radius: 50%; background: #2563eb; color: #fff; font-size: 9pt; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .duas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .card { border: 1px solid #e2e8f0; border-radius: 10px; padding: 9px 12px; page-break-inside: avoid; }
+  .card b { color: #1e3a8a; }
+  .fluxo { display: flex; gap: 6px; align-items: stretch; margin: 8px 0 12px; flex-wrap: wrap; }
+  .fluxo div { flex: 1; min-width: 90px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 7px 8px; font-size: 9pt; text-align: center; }
+  .fluxo div b { display: block; color: #1e3a8a; font-size: 9.5pt; }
+</style>
+</head>
+<body>
+
+<!-- =============================== CAPA =============================== -->
+<section class="capa">
+  <div>
+    <img src="../../public/icones/icone-512.png" alt="">
+    <div class="pre">PREFEITURA MUNICIPAL DE ITALVA · RJ</div>
+    <h1>Manual do Sistema<br>Transporte Universitário</h1>
+    <div class="sub">Todas as funcionalidades, como usar cada tela e por que ela existe, para alunos, motoristas, Secretaria de Educação, Secretaria de Transportes e Administração.</div>
+    <div class="perfis"><span>Aluno</span><span>Motorista</span><span>SEMEDUC</span><span>SEMTRANSP</span><span>Administração</span></div>
+  </div>
+  <div class="rodape"><span>transporteescolar-phi.vercel.app</span><span>Versão de novembro de 2026</span></div>
+</section>
+
+<!-- ============================= SUMÁRIO ============================== -->
+<section class="sumario">
+  <h2>Sumário</h2>
+  <ol>
+    <li>Visão geral do sistema
+      <ol><li>Para que serve</li><li>Quem usa e onde</li><li>Endereços de acesso</li><li>Como o dia funciona</li><li>Palavras usadas no sistema</li></ol></li>
+    <li>Regras principais
+      <ol><li>Reservas e prazos</li><li>Lotação e escala</li><li>Embarque pelo QR code</li><li>Faltas e "não retornou"</li><li>Volta 20:30 de Itaperuna</li><li>Dias sem transporte</li></ol></li>
+    <li>Aplicativo do aluno
+      <ol><li>Pedir o passe</li><li>Primeiro acesso</li><li>Instalar o app</li><li>Notificações</li><li>Minhas viagens (reservar)</li><li>Ler o QR code</li><li>Volta 20:30</li><li>Histórico e faltas</li><li>Trocar horário num dia</li><li>Avisos e Meus dados</li><li>Esqueci minha senha</li></ol></li>
+    <li>Aplicativo do motorista
+      <ol><li>Entrar e instalar</li><li>Minhas viagens</li><li>Lista de embarque</li><li>Presença manual sem internet</li><li>Encerrar o trecho</li><li>Liberar a volta 20:30</li></ol></li>
+    <li>Painel da SEMEDUC
+      <ol><li>Início</li><li>Alunos</li><li>Pedidos de passe</li><li>Justificativas e trocas</li><li>Faltas</li><li>Instituições</li><li>Feriados e recessos</li><li>Relatórios</li><li>Auditoria</li></ol></li>
+    <li>Painel da SEMTRANSP
+      <ol><li>Início e alertas</li><li>Painel do dia</li><li>Ônibus e QR code</li><li>Motoristas</li><li>Pontos</li><li>Viagens modelo</li><li>Escala semanal</li><li>Faltas</li><li>Relatórios</li><li>Auditoria</li><li>Parâmetros</li></ol></li>
+    <li>Administração
+      <ol><li>Usuários e senhas</li><li>Auditoria completa</li></ol></li>
+    <li>Rotinas automáticas, avisos e segurança
+      <ol><li>O que o sistema faz sozinho</li><li>Notificações enviadas</li><li>Segurança e LGPD</li><li>Dúvidas frequentes</li></ol></li>
+  </ol>
+</section>
+
+<!-- ======================= 1. VISÃO GERAL ============================= -->
+<section class="cap">
+  <div class="cap-titulo azul"><div class="num">1</div><div><h2>Visão geral do sistema</h2><p>O que é, quem usa e como o dia funciona</p></div></div>
+
+  <h3>1.1 Para que serve</h3>
+  <p>A Prefeitura de Italva oferece transporte gratuito aos universitários que estudam em <strong>Campos dos Goytacazes</strong> e <strong>Itaperuna</strong>. Antes, a organização era manual: listas em papel, mensagens e contagem na hora. O sistema faz essa logística <strong>quase sozinho</strong>, todos os dias:</p>
+  <ul>
+    <li>o aluno <strong>reserva</strong> pelo celular as viagens que vai usar, dentro de um prazo;</li>
+    <li>quando o prazo fecha, o sistema <strong>distribui os alunos nos ônibus</strong> e avisa cada um: "Seu ônibus: prefixo X";</li>
+    <li>o aluno confirma o embarque <strong>lendo o QR code colado dentro do ônibus</strong>;</li>
+    <li>o motorista vê no celular <strong>quem vai embarcar</strong>, ponto por ponto;</li>
+    <li>ao encerrar a viagem, o sistema <strong>lança presenças e faltas</strong> automaticamente;</li>
+    <li>as secretarias acompanham tudo em tempo real e tiram <strong>relatórios em Excel</strong>.</li>
+  </ul>
+
+  <h3>1.2 Quem usa e onde</h3>
+  <table>
+    <tr><th style="width:18%">Perfil</th><th style="width:16%">Onde usa</th><th>O que faz</th></tr>
+    <tr><td><b>Aluno</b></td><td>Celular (app)</td><td>Pede o passe, reserva ida e volta, lê o QR no ônibus, vê histórico, justifica faltas e pede troca de horário.</td></tr>
+    <tr><td><b>Motorista</b></td><td>Celular (app)</td><td>Vê as viagens do dia, a lista de quem embarca, marca presença manual (até sem internet) e encerra a viagem.</td></tr>
+    <tr><td><b>SEMEDUC</b></td><td>Computador</td><td>Secretaria de Educação: alunos, pedidos de passe, instituições, feriados, justificativas, trocas, faltas e relatórios.</td></tr>
+    <tr><td><b>SEMTRANSP</b></td><td>Computador</td><td>Secretaria de Transportes: ônibus, motoristas (CNH), pontos, viagens, escala, painel do dia, parâmetros e relatórios.</td></tr>
+    <tr><td><b>Administração</b></td><td>Computador</td><td>Cria os logins e senhas da SEMEDUC, da SEMTRANSP e dos motoristas, e consulta a auditoria completa.</td></tr>
+  </table>
+
+  <h3>1.3 Endereços de acesso</h3>
+  <p>Cada perfil tem a <strong>sua própria página de entrada</strong>. Um CPF só entra pela página do seu perfil (o sistema avisa qual é a certa).</p>
+  <table>
+    <tr><th style="width:38%">Endereço</th><th>Para quem / para quê</th></tr>
+    <tr><td><code>/aluno</code></td><td>Entrada do aluno (CPF e senha).</td></tr>
+    <tr><td><code>/motorista</code></td><td>Entrada do motorista (CPF e senha).</td></tr>
+    <tr><td><code>/semeduc</code></td><td>Entrada da Secretaria de Educação.</td></tr>
+    <tr><td><code>/semtransp</code></td><td>Entrada da Secretaria de Transportes.</td></tr>
+    <tr><td><code>/admin</code></td><td>Entrada da Administração (e-mail e senha).</td></tr>
+    <tr><td><code>/cadastro</code></td><td>Pedido de passe feito pelo próprio aluno (sem login).</td></tr>
+    <tr><td><code>/primeiro-acesso</code></td><td>Primeira entrada do aluno aprovado.</td></tr>
+    <tr><td><code>/continuar</code></td><td>Aluno vindo das planilhas antigas completa o cadastro.</td></tr>
+    <tr><td><code>/instalar</code> e <code>/instalar/motorista</code></td><td>Páginas para instalar o app do aluno e o do motorista no celular (links para mandar no WhatsApp).</td></tr>
+    <tr><td><code>/esqueci-senha</code></td><td>Recuperar a senha pelo e-mail cadastrado.</td></tr>
+  </table>
+  <div class="dica"><b>Endereço do site:</b> transporteescolar-phi.vercel.app. Exemplo: o aluno entra em <code>transporteescolar-phi.vercel.app/aluno</code>.</div>
+
+  <h3>1.4 Como o dia funciona</h3>
+  <p>Exemplo com a ida da manhã de terça-feira para Campos (saída 05:30, prazo 19:00 do dia anterior):</p>
+  <div class="fluxo">
+    <div><b>Domingo 00:05</b>O sistema cria as viagens de terça, já com ônibus e motorista da escala.</div>
+    <div><b>Segunda 00:00</b>Abre a reserva para terça.</div>
+    <div><b>Segunda, 18:00</b>Lembrete para quem ainda não reservou.</div>
+    <div><b>Segunda 19:00</b>Prazo fecha; alunos são distribuídos nos ônibus e avisados.</div>
+    <div><b>Terça 04:30</b>QR code passa a valer (1 h antes da saída).</div>
+    <div><b>Terça 05:30</b>Motorista inicia, alunos leem o QR; aviso de "ônibus no ponto".</div>
+    <div><b>Ao encerrar</b>Faltas e presenças lançadas sozinhas.</div>
+  </div>
+
+  <h3>1.5 Palavras usadas no sistema</h3>
+  <table>
+    <tr><th style="width:24%">Palavra</th><th>Significado</th></tr>
+    <tr><td><b>Viagem modelo</b></td><td>Uma linha da grade fixa: cidade, ida ou volta, horário, prazo e dias da semana. Ex.: "Campos manhã, ida, 05:30, segunda a sábado".</td></tr>
+    <tr><td><b>Viagem do dia</b></td><td>A viagem modelo numa data concreta (ex.: a ida de 05:30 do dia 02/12). É criada automaticamente.</td></tr>
+    <tr><td><b>Trecho</b></td><td>Ida e volta são separadas. Cada uma é uma viagem própria, com reserva própria.</td></tr>
+    <tr><td><b>Rotas liberadas</b></td><td>As idas e voltas que a SEMEDUC liberou para cada aluno. Só elas aparecem no app dele.</td></tr>
+    <tr><td><b>Reserva</b></td><td>O aluno avisa que vai usar aquela viagem. Uma ida e uma volta por dia.</td></tr>
+    <tr><td><b>Prazo</b></td><td>Horário limite para reservar ou cancelar. Depois dele, o botão fica inativo.</td></tr>
+    <tr><td><b>Escala</b></td><td>Quais ônibus e motoristas fazem cada viagem. A escala semanal é a rotina; o Painel do dia ajusta exceções.</td></tr>
+    <tr><td><b>Alocação</b></td><td>Em qual ônibus cada aluno vai embarcar (feita sozinha no fechamento do prazo, agrupando por ponto).</td></tr>
+    <tr><td><b>Ponto</b></td><td>Local de embarque ou desembarque. Em Italva embarcam as idas; nas cidades, embarcam as voltas.</td></tr>
+    <tr><td><b>Embarque</b></td><td>Registro de que o aluno entrou no ônibus: pelo QR code ou, em último caso, pelo motorista (presença manual com motivo).</td></tr>
+    <tr><td><b>Ocorrência</b></td><td>Problema na viagem (pane, atraso grave). Marcada pela SEMTRANSP, anula as faltas daquela viagem.</td></tr>
+  </table>
+</section>
+
+<!-- ======================== 2. REGRAS ================================= -->
+<section class="cap">
+  <div class="cap-titulo cinza"><div class="num">2</div><div><h2>Regras principais</h2><p>O que o sistema confere sozinho, para todos os perfis</p></div></div>
+
+  <h3>2.1 Reservas e prazos</h3>
+  <ul>
+    <li>O aluno <strong>só vê as viagens que estão nas rotas liberadas dele</strong> para aquele dia. Viagens fora disso nem aparecem.</li>
+    <li>A reserva <strong>abre às 00:00 do dia anterior</strong> à viagem e <strong>fecha no prazo</strong> de cada viagem. O prazo de cancelar é o mesmo de reservar.</li>
+    <li><strong>Uma ida e uma volta por dia</strong>, e a volta precisa sair depois da ida. Ao reservar uma ida, as outras idas somem; viagens que já não dão tempo também somem.</li>
+    <li>O prazo vale <strong>no segundo exato</strong>, sempre no horário de Brasília (America/Sao_Paulo), não no relógio do celular.</li>
+    <li>Não reserva: cadastro pendente ou inativo, matrícula vencida (ou sem validade cadastrada), dia de feriado/recesso, dia sem aula da instituição do aluno ou data fora do semestre.</li>
+  </ul>
+  <table>
+    <tr><th>Viagem (Campos)</th><th>Saída</th><th>Prazo de reserva e cancelamento</th></tr>
+    <tr><td>Ida manhã</td><td>05:30</td><td>19:00 do dia anterior</td></tr>
+    <tr><td>Ida tarde</td><td>11:00</td><td>08:00 do mesmo dia</td></tr>
+    <tr><td>Ida noite</td><td>16:30</td><td>15:00 do mesmo dia</td></tr>
+    <tr><td>Voltas (12:00, tarde, noite)</td><td>12:00 / 18:15 / 22:00</td><td>10:00 / 15:00 / 15:00 do mesmo dia</td></tr>
+  </table>
+  <p style="font-size:9.5pt;color:#475569">Os horários reais ficam em <b>Viagens modelo</b> e podem ser alterados pela SEMTRANSP. A tabela acima é o modelo inicial.</p>
+
+  <h3>2.2 Lotação e escala</h3>
+  <ul>
+    <li><strong>Idas nunca bloqueiam por falta de vaga.</strong> Se as reservas passarem dos lugares, o painel da SEMTRANSP mostra <b>alerta de excesso</b> para colocar um ônibus extra.</li>
+    <li>Voltas só bloqueiam ao lotar se a viagem modelo estiver marcada assim (padrão: só alerta).</li>
+    <li>A capacidade de uma viagem é a <strong>soma dos lugares dos ônibus escalados</strong>.</li>
+    <li>O mesmo ônibus/motorista pode fazer várias viagens no dia, mas o sistema <strong>impede horários sobrepostos</strong>.</li>
+    <li>Quando o prazo fecha, os alunos são <strong>distribuídos nos ônibus agrupando por ponto de embarque</strong>. A SEMTRANSP pode mover alunos ou pontos inteiros depois.</li>
+  </ul>
+
+  <h3>2.3 Embarque pelo QR code</h3>
+  <p>Cada ônibus tem um <strong>QR code fixo</strong> (adesivo dentro do veículo). Ao ler, o sistema confere:</p>
+  <ol class="passos">
+    <li>se o aluno tem <b>reserva</b> numa viagem do dia feita por aquele ônibus;</li>
+    <li>se está na <b>janela de horário</b>: de 60 minutos antes até 30 minutos depois da saída;</li>
+    <li>se o celular do aluno está a <b>até 200 metros</b> da última posição enviada pelo celular do motorista. Sem posição recente do motorista, aceita e marca "sem verificação de localização".</li>
+  </ol>
+  <ul>
+    <li>Leu o QR de <b>outro ônibus da mesma viagem</b> com lugar? Aceita e muda o aluno de ônibus.</li>
+    <li>Mensagens claras: "Você não tem reserva nesta viagem", "Seu ônibus é o prefixo X", "Fora do horário de embarque".</li>
+    <li>A localização do aluno é usada <b>só na hora da leitura</b>; o sistema guarda apenas a distância calculada.</li>
+  </ul>
+  <div class="dica"><b>Por que assim:</b> o QR fixo dispensa o motorista de conferir um por um; a janela de horário e a distância impedem que alguém "embarque" com a foto do QR em casa.</div>
+
+  <h3>2.4 Faltas e "não retornou"</h3>
+  <table>
+    <tr><th style="width:42%">Situação ao encerrar a viagem</th><th>Resultado</th></tr>
+    <tr><td>Reservou a <b>ida</b> e não embarcou</td><td><b>Falta</b></td></tr>
+    <tr><td>Reservou a <b>volta</b>, embarcou na ida do mesmo dia e não embarcou na volta</td><td><b>Não retornou</b> (sem penalidade, serve de alerta)</td></tr>
+    <tr><td>Reservou a volta sem ter embarcado em ida no dia e não embarcou</td><td><b>Falta</b></td></tr>
+    <tr><td>Viagem marcada <b>com ocorrência</b></td><td>Faltas <b>anuladas</b></td></tr>
+    <tr><td>Justificativa aprovada pela SEMEDUC</td><td><b>Falta justificada</b></td></tr>
+  </table>
+  <p>As faltas <strong>só são registradas</strong>: não há bloqueio automático. Advertências são feitas pela secretaria, que pode anotar no histórico do aluno. Viagem não encerrada pelo motorista é encerrada sozinha 4 horas após a saída (parâmetro).</p>
+
+  <h3>2.5 Volta 20:30 de Itaperuna</h3>
+  <p>Viagem extra: quando vão dois ou mais ônibus para Itaperuna, um deles pode voltar às 20:30, desde que os que ficam consigam trazer todos às 22:00.</p>
+  <ol class="passos">
+    <li>A partir das <b>18:30</b> (e até 20:00), um motorista escalado em Itaperuna toca em <b>Liberar volta 20:30</b>, escolhe qual dos ônibus da 22:00 sai mais cedo e confirma o <b>mínimo de alunos</b>. Só um motorista libera por noite.</li>
+    <li>O mínimo sugerido é o necessário para os ônibus que ficam levarem o restante: reservas da 22:00 menos os lugares que ficam.</li>
+    <li>O botão <b>Reservar volta 20:30</b> aparece só para quem tem reserva na volta 22:00 daquele dia. O aluno pode reservar ou desistir <b>até as 20:00</b>, e mantém a vaga das 22:00 enquanto a 20:30 não confirma.</li>
+    <li><b>Mínimo atingido:</b> a 20:30 é confirmada, todos recebem aviso, o botão some para os demais e as reservas das 22:00 desses alunos são liberadas. Quem ficou na 22:00 vê o ônibus e o motorista novos. O ônibus sai assim que todos embarcarem.</li>
+    <li><b>Não atingiu até 20:00:</b> a 20:30 é cancelada e todos continuam na 22:00, <b>sem falta</b>.</li>
+  </ol>
+
+  <h3>2.6 Dias sem transporte</h3>
+  <p><b>Feriado ou recesso geral</b> lançado antes: as viagens daquele dia nem são criadas; lançado depois, as viagens que ainda não começaram são <b>canceladas</b> e os reservados avisados, sem falta. <b>Dia sem aula de uma instituição:</b> só os alunos dela não reservam, e reservas que já existiam são canceladas.</p>
+</section>
+
+<!-- ======================== 3. ALUNO ================================== -->
+<section class="cap">
+  <div class="cap-titulo verde"><div class="num">3</div><div><h2>Aplicativo do aluno</h2><p>Tudo pelo celular: do pedido do passe ao embarque</p></div></div>
+
+  <div class="tela"><div class="tela-cab"><b>Pedir o passe (pré-cadastro)</b><span class="end">/cadastro</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-serve">Para que serve</span>Pedido do passe feito pelo próprio aluno, sem ir à secretaria.</div>
+    <div class="bloco"><span class="rot r-usar">Como usar</span>Na página do aluno, toque em <b>Faça seu cadastro</b>. Preencha nome, CPF, contato (e-mail obrigatório), endereço, faculdade/curso/turno e envie: documento com CPF, comprovante de residência, comprovante de matrícula da instituição e, se quiser, uma foto. O pedido fica <b>em análise</b> na SEMEDUC. Aprovado ou recusado, o aluno recebe um <b>e-mail</b>.</div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>Tira a fila da secretaria e já entrega os documentos digitalizados para conferência. Os arquivos ficam em local privado e, se o pedido for recusado, são apagados (LGPD).</div>
+  </div></div>
+
+  <div class="tela"><div class="tela-cab"><b>Continuar cadastro (alunos das planilhas antigas)</b><span class="end">/continuar · /completar/…</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-serve">Para que serve</span>Quem já estava nas planilhas do sistema antigo completa o cadastro com CPF e documentos.</div>
+    <div class="bloco"><span class="rot r-usar">Como usar</span>Abra o link individual recebido por WhatsApp ou e-mail, ou entre em <code>/continuar</code> e informe o e-mail ou telefone usado na planilha. Envie os documentos pedidos.</div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>Aproveita os dados antigos sem obrigar o aluno a começar do zero, mas confere os documentos de novo.</div>
+  </div></div>
+
+  <div class="tela"><div class="tela-cab"><b>Primeiro acesso</b><span class="end">/primeiro-acesso</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-serve">Para que serve</span>Primeira entrada do aluno aprovado.</div>
+    <div class="bloco"><span class="rot r-usar">Como usar</span>Informe o <b>CPF</b> e os <b>4 últimos números do telefone</b> cadastrado (ou a data de nascimento). A primeira senha é o <b>próprio CPF</b>, só os números. Em seguida o app pede uma <b>senha nova</b> (com letras e números) e o aceite do <b>termo de uso e privacidade</b>.</div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>O segundo dado (telefone ou nascimento) impede que alguém entre só sabendo o CPF de outra pessoa. A troca obrigatória garante que ninguém continue com a senha inicial.</div>
+  </div></div>
+
+  <div class="tela"><div class="tela-cab"><b>Instalar o app (Baixar o app)</b><span class="end">/instalar · menu → Baixar o app</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-serve">Para que serve</span>Colocar o ícone do Transporte Italva na tela do celular, abrindo como aplicativo, em tela cheia.</div>
+    <div class="bloco"><span class="rot r-usar">Como usar</span><b>Android/Chrome:</b> menu → <b>Baixar o app</b> → Instalar (abre direto). <b>iPhone:</b> no Safari, toque em Compartilhar → <b>Adicionar à Tela de Início</b> (o app mostra o passo a passo). Aberto pelo WhatsApp ou Instagram, o app avisa para abrir no navegador primeiro.</div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>Abre mais rápido e, no iPhone, é <b>obrigatório para receber notificações</b>. O app do aluno e o do motorista são separados.</div>
+  </div></div>
+
+  <div class="tela"><div class="tela-cab"><b>Notificações</b><span class="end">menu → Notificações</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-serve">Para que serve</span>Receber os avisos do transporte no celular, mesmo com o app fechado.</div>
+    <div class="bloco"><span class="rot r-usar">Como usar</span>No primeiro acesso aparece a janela <b>Receber avisos no celular?</b> Toque em <b>Ativar notificações</b> e permita. Também há um cartão na tela inicial e a tela <b>Notificações</b> no menu, com os botões <b>Enviar teste</b>, <b>Desligar neste celular</b> e a chave do <b>Lembrete de reserva</b>.</div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>É o canal principal de aviso (no lugar do WhatsApp): seu ônibus, ônibus chegando ao ponto, cancelamentos, volta 20:30, respostas da secretaria. O aluno pode desligar só os lembretes; avisos operacionais continuam.</div>
+  </div></div>
+
+  <div class="tela"><div class="tela-cab"><b>Minhas viagens (tela inicial: Hoje / Amanhã)</b><span class="end">/app</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-serve">Para que serve</span>Reservar e cancelar as viagens do dia, ver o prazo, o ônibus, a placa, o motorista e o ponto.</div>
+    <div class="bloco"><span class="rot r-usar">Como usar</span>
+      <ol class="passos">
+        <li>Escolha <b>Hoje</b> ou <b>Amanhã</b> (Amanhã aparece quando a reserva já abriu).</li>
+        <li>A tela mostra as <b>idas</b> liberadas. Toque em <b>Reservar</b>, escolha o ponto de embarque em Italva e onde desce.</li>
+        <li>Em seguida o app oferece as <b>voltas</b> que combinam com essa ida: escolha a volta e os pontos (ou pule).</li>
+        <li>Até o prazo, dá para <b>Cancelar</b> ou trocar os pontos. Depois do prazo aparece <b>"Seu ônibus: prefixo X"</b>, placa, motorista e o horário em que o QR passa a valer.</li>
+      </ol></div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>A reserva antecipada é o que permite planejar quantos ônibus mandar. Escolher ida e volta juntos ajuda a logística, e esconder viagens encerradas ou que não dão mais tempo evita erro do aluno.</div>
+  </div></div>
+
+  <div class="tela"><div class="tela-cab"><b>Ler QR code do ônibus</b><span class="end">menu → Ler QR code · /embarque/…</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-serve">Para que serve</span>Confirmar o embarque.</div>
+    <div class="bloco"><span class="rot r-usar">Como usar</span>Dentro do ônibus, abra <b>Ler QR code</b> e aponte para o adesivo (ou use a câmera do celular, que abre o link do app). Permita a <b>localização</b>. A tela confirma "Embarque registrado" ou explica o problema.</div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>Gera a presença sem o motorista conferir lista, e só vale no ônibus certo, no horário e perto do ônibus.</div>
+  </div></div>
+
+  <div class="tela"><div class="tela-cab"><b>Volta 20:30 (Itaperuna)</b><span class="end">/app (cartão roxo)</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-serve">Para que serve</span>Voltar mais cedo quando um motorista libera a volta extra.</div>
+    <div class="bloco"><span class="rot r-usar">Como usar</span>O cartão aparece só para quem está na volta das 22:00, depois da liberação. Toque em <b>Reservar volta 20:30</b>; acompanhe "X de Y reservaram". Pode <b>Desistir</b> até confirmar ou até as 20:00.</div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>Ver regra completa na seção 2.5. Sem o mínimo, ninguém perde nada: todos continuam na 22:00.</div>
+  </div></div>
+
+  <div class="tela"><div class="tela-cab"><b>Histórico e faltas</b><span class="end">menu → Histórico e faltas</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-serve">Para que serve</span>Ver as viagens dos últimos 90 dias com o resultado de cada uma: embarcou, falta, falta justificada, não retornou ou viagem com ocorrência.</div>
+    <div class="bloco"><span class="rot r-usar">Como usar</span>No topo ficam os totais. Em cada falta aparece <b>Justificar esta falta</b>: escreva o motivo, anexe foto ou PDF do atestado (opcional) e envie. Prazo: até <b>15 dias</b> após a viagem. A resposta chega por notificação; se recusada, aparece o motivo e é possível enviar outra dentro do prazo.</div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>Transparência para o aluno e um caminho formal para justificar faltas, sem papel.</div>
+  </div></div>
+
+  <div class="tela"><div class="tela-cab"><b>Trocar horário num dia (exceção de data)</b><span class="end">menu → Trocar horário num dia</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-serve">Para que serve</span>Pedir outra ida e/ou volta para uma data específica (ex.: prova em outro turno).</div>
+    <div class="bloco"><span class="rot r-usar">Como usar</span>Escolha o <b>dia</b> (de hoje até 60 dias), a <b>ida</b> e/ou a <b>volta</b> desejadas (só aparecem as que existem naquele dia; volta da mesma cidade e depois da ida) e escreva o <b>motivo</b>. Aprovado, a viagem pedida aparece no app <b>só naquele dia</b>, no lugar da sua, e a reserva segue o prazo normal. Dá para cancelar o pedido enquanto a data não passou.</div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>As rotas liberadas valem para todos os dias; a exceção resolve casos pontuais sem mexer no cadastro do aluno.</div>
+  </div></div>
+
+  <div class="duas">
+    <div class="card"><b>Avisos</b> <span style="font-size:8.5pt;color:#64748b">(menu → Avisos)</span><br>Guarda todos os avisos recebidos (ônibus, cancelamentos, respostas, lembretes). O número no menu mostra os não lidos. Existe para nada se perder, mesmo sem notificação ativa.</div>
+    <div class="card"><b>Meus dados</b> <span style="font-size:8.5pt;color:#64748b">(menu → Meus dados)</span><br>O aluno troca <b>telefone, e-mail e foto</b>. Nome e CPF só a SEMEDUC altera. A foto é a que o motorista vê na lista; o e-mail serve para recuperar a senha.</div>
+  </div>
+
+  <div class="tela"><div class="tela-cab"><b>Esqueci minha senha</b><span class="end">/esqueci-senha</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-usar">Como usar</span>Na página de entrada, toque em <b>Esqueci minha senha</b> e informe o CPF. Chega um e-mail (de italvasemtransp@gmail.com) com o botão <b>Clique aqui para criar uma nova senha</b>, válido por 1 hora e funciona em qualquer navegador. Sem e-mail cadastrado, a secretaria gera uma nova senha provisória.</div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>O aluno resolve sozinho, sem depender da secretaria.</div>
+  </div></div>
+</section>
+
+<!-- ======================== 4. MOTORISTA ============================== -->
+<section class="cap">
+  <div class="cap-titulo laranja"><div class="num">4</div><div><h2>Aplicativo do motorista</h2><p>O mais simples possível: lista, presença e encerrar</p></div></div>
+
+  <div class="tela"><div class="tela-cab"><b>Entrar e instalar</b><span class="end">/motorista · /instalar/motorista</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-usar">Como usar</span>O login (CPF e senha provisória) é criado pela <b>Administração</b>. No primeiro acesso o motorista troca a senha. Instale o app pelo link <code>/instalar/motorista</code> e ative as notificações.</div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>App separado do aluno, com ícone próprio, para o motorista abrir direto na tela dele.</div>
+  </div></div>
+
+  <div class="tela"><div class="tela-cab"><b>Minhas viagens</b><span class="end">/app/motorista</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-serve">Para que serve</span>Mostrar os trechos do dia atribuídos a ele, em ordem de horário, com quantos alunos vão em cada um.</div>
+    <div class="bloco"><span class="rot r-usar">Como usar</span>A tela se atualiza sozinha. Toque numa viagem para abrir a lista. Em Itaperuna, à noite, aparece o cartão da <b>Volta 20:30</b>.</div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>O motorista sabe na hora o que vai fazer no dia, sem depender de ligação ou papel.</div>
+  </div></div>
+
+  <div class="tela"><div class="tela-cab"><b>Lista de embarque (trecho)</b><span class="end">/app/motorista/viagem/…</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-serve">Para que serve</span>Ver quem vai embarcar, ordenado pelos pontos da rota, com foto, nome e ponto; quem já leu o QR aparece marcado; contador "18 de 32 embarcados".</div>
+    <div class="bloco"><span class="rot r-usar">Como usar</span>
+      <ol class="passos">
+        <li><b>Antes do prazo</b>, a lista aparece como <b>prévia</b> e vai se formando em tempo real.</li>
+        <li>Na hora, toque em <b>Iniciar</b> (liberado perto da saída). A partir daí o celular envia a <b>localização</b>, usada para validar o QR dos alunos.</li>
+        <li>Alunos leem o QR e são marcados sozinhos. Se alguém estiver sem celular ou sem bateria, toque em <b>marcar presença</b> e informe o <b>motivo</b>.</li>
+        <li>Ao terminar, toque em <b>Encerrar</b>. Se houver um próximo trecho de volta com o mesmo ônibus, a tela abre a lista dele.</li>
+      </ol></div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>Substitui a lista de papel e lança as faltas sozinho ao encerrar. A localização do motorista só é enviada com a viagem em andamento.</div>
+  </div></div>
+
+  <div class="tela"><div class="tela-cab"><b>Presença manual sem internet</b><span class="end">funciona com sinal fraco</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-usar">Como usar</span>Com a lista aberta, mesmo sem sinal, marque a presença normalmente. Ela fica numa <b>fila no celular</b> e é enviada sozinha quando a internet voltar (a tela mostra o que está pendente).</div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>Na estrada o sinal cai. O aluno que embarcou não pode levar falta porque o motorista estava sem internet.</div>
+  </div></div>
+
+  <div class="tela"><div class="tela-cab"><b>Liberar a volta 20:30 (Itaperuna)</b><span class="end">cartão na tela inicial</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-usar">Como usar</span>A partir das 18:30, toque em <b>Liberar volta 20:30</b>, escolha qual dos ônibus da 22:00 sai mais cedo (o app mostra os lugares que ficam e o mínimo sugerido), ajuste o mínimo e confirme. Depois acompanhe "X de Y alunos reservaram". Confirmada, a lista aparece e o ônibus sai assim que todos embarcarem.</div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>Permite voltar mais cedo sem deixar ninguém sem lugar na 22:00. Só um motorista libera por noite.</div>
+  </div></div>
+
+  <div class="dica"><b>Notificações do motorista:</b> quando é escalado ou retirado de uma viagem de hoje ou amanhã, quando a lista fecha ("Lista fechada: 32 alunos no ônibus 02") e quando a viagem é cancelada.</div>
+</section>
+
+<!-- ======================== 5. SEMEDUC ================================ -->
+<section class="cap">
+  <div class="cap-titulo roxo"><div class="num">5</div><div><h2>Painel da SEMEDUC</h2><p>Secretaria de Educação: alunos, documentos e frequência</p></div></div>
+  <p>Entrada em <code>/semeduc</code>. O menu lateral pode ser recolhido; a trilha no topo mostra onde você está.</p>
+
+  <div class="tela"><div class="tela-cab"><b>Início</b><span class="end">/painel</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-serve">Para que serve</span>Resumo: alunos ativos, cadastros pendentes, instituições e atalhos (Cadastrar aluno, Feriados e recessos).</div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>Mostra de cara o que precisa de atenção.</div>
+  </div></div>
+
+  <div class="tela"><div class="tela-cab"><b>Alunos</b><span class="end">/painel/alunos</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-serve">Para que serve</span>Cadastro único por CPF de cada aluno e tudo que define o que ele pode reservar.</div>
+    <div class="bloco"><span class="rot r-usar">Como usar</span>Busque pelo nome ou CPF e abra a ficha. Nela:
+      <ul>
+        <li><b>Dados</b>: nome, CPF, nascimento, telefone, e-mail, endereço, situação (pendente, ativo, inativo).</li>
+        <li><b>Documentos</b>: comprovante de matrícula com <b>validade</b>, comprovante de residência e foto.</li>
+        <li><b>Cursos</b>: instituição, curso, período e turno (usados no calendário e nos relatórios).</li>
+        <li><b>Rotas liberadas</b>: marque a cidade (Campos, Itaperuna ou ambas) e as idas e voltas que o aluno pode reservar.</li>
+        <li><b>Acesso</b>: gerar nova senha provisória, bloquear ou liberar.</li>
+        <li><b>Anotações</b>: registros da secretaria, como "advertido verbalmente em dd/mm".</li>
+      </ul>
+      Em <b>Cadastrar aluno</b>, a primeira senha é o CPF (só números) e a troca é obrigatória.</div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>As rotas liberadas e a validade da matrícula controlam quem reserva o quê; sem matrícula válida o aluno não reserva.</div>
+  </div></div>
+
+  <div class="tela"><div class="tela-cab"><b>Pedidos de passe</b><span class="end">/painel/pedidos-passe</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-serve">Para que serve</span>Analisar os pedidos feitos em <code>/cadastro</code> e os alunos vindos das planilhas.</div>
+    <div class="bloco"><span class="rot r-usar">Como usar</span>Abas: <b>Pendentes</b> (conferir documentos e decidir), <b>Aguardando complemento</b> (alunos das planilhas: <b>Copiar link</b> para WhatsApp ou <b>Enviar e-mail</b>, inclusive em lote), <b>Aprovados</b> e <b>Recusados</b>. <b>Aprovar</b> pede a validade da matrícula, cria o aluno ativo com os documentos e o curso e avisa por e-mail. <b>Recusar</b> exige o motivo, apaga os documentos e avisa por e-mail. Depois de aprovar, marque as <b>rotas liberadas</b> na ficha do aluno.</div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>Centraliza a entrada de alunos com conferência de documentos e comunicação automática.</div>
+  </div></div>
+
+  <div class="tela"><div class="tela-cab"><b>Justificativas e trocas</b><span class="end">/painel/solicitacoes</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-serve">Para que serve</span>Analisar as justificativas de falta e os pedidos de troca de horário enviados pelos alunos no app.</div>
+    <div class="bloco"><span class="rot r-usar">Como usar</span>Escolha a aba (<b>Justificativas de falta</b> ou <b>Trocas de horário</b>) e <b>Para analisar</b> / <b>Já analisadas</b>. Cada pedido mostra aluno (link para a ficha), viagem, motivo e <b>Ver anexo</b>. Clique em <b>Aprovar</b> ou escreva o motivo e clique em <b>Recusar</b>. O aluno é avisado no celular.</div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>Aprovada, a falta vira "justificada" (ou a troca passa a valer naquele dia) com registro de quem decidiu.</div>
+  </div></div>
+
+  <div class="tela"><div class="tela-cab"><b>Faltas</b><span class="end">/painel/faltas</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-serve">Para que serve</span>Lista das faltas lançadas, separando <b>não justificadas</b>, <b>justificativa em análise</b> e <b>justificadas</b>.</div>
+    <div class="bloco"><span class="rot r-usar">Como usar</span>Clique nos totais do topo para filtrar; ajuste período (padrão: 30 dias), cidade e nome. O nome leva à ficha do aluno.</div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>Acompanhar a frequência e decidir advertências com base em dados.</div>
+  </div></div>
+
+  <div class="duas">
+    <div class="card"><b>Instituições</b> <span style="font-size:8.5pt;color:#64748b">(/painel/instituicoes)</span><br>Nome, cidade e endereço de cada faculdade, com os <b>semestres</b> (início e fim) e os <b>dias sem aula</b> dela. Se a instituição tem semestres, o aluno só reserva dentro deles. Existe para o calendário de cada faculdade valer só para os alunos dela.</div>
+    <div class="card"><b>Feriados e recessos</b> <span style="font-size:8.5pt;color:#64748b">(/painel/calendario)</span><br>Dias sem transporte para todos. Lançado antes, as viagens nem são criadas; lançado depois, as viagens são canceladas e os reservados avisados, sem falta.</div>
+  </div>
+
+  <div class="tela"><div class="tela-cab"><b>Relatórios (SEMEDUC)</b><span class="end">/painel/relatorios</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-usar">Como usar</span>Escolha o relatório à esquerda, ajuste os filtros (período, instituição, curso, turno) e clique em <b>Aplicar</b>. <b>Baixar Excel</b> gera a planilha com título, filtros usados, cabeçalho fixo e filtro por coluna.</div>
+    <table>
+      <tr><th style="width:30%">Relatório</th><th>O que mostra / para quê</th></tr>
+      <tr><td>Alunos ativos</td><td>Por instituição, curso e turno, com validade da matrícula.</td></tr>
+      <tr><td>Faltas por aluno (ranking)</td><td>Viagens, embarques, faltas, justificadas, não retornou e % de faltas. Quem mais faltou primeiro.</td></tr>
+      <tr><td>Matrículas vencendo</td><td>Vencidas, sem validade e vencendo em 15, 30, 60 ou 90 dias. Para cobrar renovação.</td></tr>
+      <tr><td>Uso real × rotas liberadas</td><td>Quem tem viagens liberadas e não reservou no período. Para limpar cadastros parados.</td></tr>
+    </table>
+  </div></div>
+
+  <div class="tela"><div class="tela-cab"><b>Auditoria (SEMEDUC)</b><span class="end">/painel/auditoria</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-serve">Para que serve</span>Ver quem criou, alterou ou apagou cadastros da Educação (alunos, cursos, rotas, instituições, calendário, pedidos, justificativas, trocas, frequência e contas de alunos), com o valor antigo e o novo.</div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>Transparência e segurança: toda alteração tem autor e horário.</div>
+  </div></div>
+</section>
+
+<!-- ======================== 6. SEMTRANSP ============================== -->
+<section class="cap">
+  <div class="cap-titulo azul"><div class="num">6</div><div><h2>Painel da SEMTRANSP</h2><p>Secretaria de Transportes: frota, escala e operação do dia</p></div></div>
+  <p>Entrada em <code>/semtransp</code>.</p>
+
+  <div class="tela"><div class="tela-cab"><b>Início e alertas</b><span class="end">/painel</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-serve">Para que serve</span>Resumo do dia (viagens, reservas, alertas), contadores da frota e os <b>alertas</b>: excesso de reservas hoje e amanhã e documentos da frota (CNH, vistoria, licenciamento) vencidos ou vencendo em até 30 dias.</div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>Os alertas aparecem onde a equipe já olha todo dia, sem precisar abrir relatório.</div>
+  </div></div>
+
+  <div class="tela"><div class="tela-cab"><b>Painel do dia</b><span class="end">/painel/dia</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-serve">Para que serve</span>Acompanhar <b>em tempo real</b> cada viagem do dia: prazo aberto/fechado, reservas × lugares, ônibus e motoristas, status (agendada, prazo fechado, em andamento, encerrada, cancelada, com ocorrência), embarcados × reservados, faltas e não retornou.</div>
+    <div class="bloco"><span class="rot r-usar">Como usar</span>Escolha o dia e a cidade no topo. Abra uma viagem para:
+      <ul>
+        <li><b>Adicionar ônibus</b> (extra), <b>trocar motorista</b> ou remover ônibus;</li>
+        <li><b>Reaplicar escala</b> (enquanto o prazo está aberto) e <b>Realocar alunos</b> (distribuir agrupando por ponto);</li>
+        <li><b>Mover</b> um aluno ou <b>Mover ponto</b> inteiro para outro ônibus;</li>
+        <li><b>Marcar ocorrência</b> (anula faltas) ou <b>Cancelar</b> a viagem (os alunos são avisados).</li>
+      </ul>
+      A faixa roxa mostra a <b>Volta 20:30</b> de Itaperuna em tempo real. <b>Gerar viagens</b> cria manualmente os próximos dias, se precisar.</div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>A escala semanal é a rotina; o Painel do dia resolve os imprevistos de uma data sem mexer na rotina.</div>
+  </div></div>
+
+  <div class="tela"><div class="tela-cab"><b>Ônibus e QR code</b><span class="end">/painel/onibus</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-usar">Como usar</span>Cadastre prefixo, placa, capacidade, situação (ativo / em manutenção) e validades de <b>vistoria</b> e <b>licenciamento</b>. Em <b>Adesivo do QR</b>, imprima e cole dentro do ônibus. Se o adesivo vazar, <b>gere um novo QR</b> (o antigo deixa de valer).</div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>A capacidade define as vagas; o QR identifica o ônibus no embarque; as validades alimentam os alertas.</div>
+  </div></div>
+
+  <div class="tela"><div class="tela-cab"><b>Motoristas</b><span class="end">/painel/motoristas</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-usar">Como usar</span>O login do motorista é criado pela <b>Administração</b>; ele aparece aqui para a SEMTRANSP completar o <b>telefone</b> e a <b>CNH</b> (número, categoria, validade). Senha e bloqueio de acesso: falar com a Administração.</div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>Separa quem cuida do acesso (Administração) de quem cuida da operação (SEMTRANSP). A validade da CNH entra nos alertas.</div>
+  </div></div>
+
+  <div class="tela"><div class="tela-cab"><b>Pontos</b><span class="end">/painel/pontos</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-usar">Como usar</span>Cadastre nome, cidade (Italva, Campos, Itaperuna), linha (Campos ou Itaperuna), endereço, coordenadas (opcional) e a <b>ordem na rota</b>.</div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>O aluno escolhe o ponto ao reservar; a alocação agrupa por ponto; a lista do motorista e o aviso "ônibus no ponto" seguem a ordem da rota.</div>
+  </div></div>
+
+  <div class="tela"><div class="tela-cab"><b>Viagens modelo</b><span class="end">/painel/viagens</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-usar">Como usar</span>Cada viagem tem cidade, nome, sentido, horário de saída, duração, tipo e hora do prazo, dias da semana, se é condicional, se bloqueia ao lotar, <b>km da viagem</b>, <b>km do retorno vazio</b> e se está ativa. Alterações valem também para os dias já criados que ainda não começaram (o prazo empurrado para frente reabre a reserva).</div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>É a grade fixa de onde saem todas as viagens do dia. O km alimenta o relatório de km rodado (o retorno vazio da ida da manhã entra automaticamente).</div>
+  </div></div>
+
+  <div class="tela"><div class="tela-cab"><b>Escala semanal</b><span class="end">/painel/escala</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-usar">Como usar</span>Para cada viagem e dia da semana, defina <b>qual ônibus e qual motorista</b>. É possível copiar a escala de um dia para outro. Mudanças valem para hoje em diante nas viagens que ainda não começaram.</div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>As viagens são criadas já com ônibus e motorista. <b>Sem escala, a viagem nasce sem ônibus</b>: ninguém é alocado, o motorista não vê a viagem e nenhum QR vale para ela.</div>
+  </div></div>
+
+  <div class="tela"><div class="tela-cab"><b>Faltas, Relatórios, Auditoria e Parâmetros</b><span class="end">menu Transportes</span></div><div class="tela-corpo">
+    <div class="bloco"><b>Faltas</b>: a mesma visão da SEMEDUC, só para consulta (os atestados ficam com a Educação).</div>
+    <table>
+      <tr><th style="width:30%">Relatório</th><th>O que mostra / para quê</th></tr>
+      <tr><td>Ocupação média por viagem</td><td>Média de reservados, embarcados e lugares por viagem e dia da semana, com % de ocupação. Para ajustar a frota.</td></tr>
+      <tr><td>Previsão de lotação</td><td>Alunos com a viagem liberada × lugares da escala. Sobra negativa (em vermelho) = faltam lugares se todos forem.</td></tr>
+      <tr><td>Km rodado estimado</td><td>Ônibus que fizeram a viagem × km, mais o retorno vazio, com total.</td></tr>
+      <tr><td>Vencimentos da frota</td><td>CNH, vistoria e licenciamento vencidos ou vencendo em 15 a 90 dias.</td></tr>
+    </table>
+    <div class="bloco"><b>Auditoria</b>: alterações em ônibus, motoristas, pontos, viagens, escala, parâmetros, viagens do dia e embarques.</div>
+    <div class="bloco"><b>Parâmetros</b>: ajustes do sistema, explicados abaixo.</div>
+  </div></div>
+
+  <h3>Parâmetros do sistema</h3>
+  <table>
+    <tr><th style="width:48%">Parâmetro</th><th style="width:12%">Padrão</th><th>Efeito</th></tr>
+    <tr><td>Abertura da reserva (dias antes / horário)</td><td>1 / 00:00</td><td>Quando a reserva abre.</td></tr>
+    <tr><td>QR: minutos antes / depois da saída</td><td>60 / 30</td><td>Janela em que o QR vale.</td></tr>
+    <tr><td>QR: distância máxima (metros)</td><td>200</td><td>Distância entre aluno e motorista.</td></tr>
+    <tr><td>Localização do motorista válida por (min)</td><td>10</td><td>Depois disso, o QR é aceito "sem verificação".</td></tr>
+    <tr><td>Encerrar viagem automaticamente após (horas)</td><td>4</td><td>Viagens esquecidas são encerradas e as faltas lançadas.</td></tr>
+    <tr><td>Lembrete de reserva (ativo / minutos antes)</td><td>sim / 60</td><td>Aviso para quem ainda não reservou.</td></tr>
+    <tr><td>Volta 20:30: liberar a partir de / reservas até (min antes)</td><td>120 / 30</td><td>18:30 e 20:00.</td></tr>
+    <tr><td>Justificativa de falta: prazo (dias)</td><td>15</td><td>Até quando o aluno justifica.</td></tr>
+    <tr><td>Troca de horário: até quantos dias à frente</td><td>60</td><td>Antecedência máxima do pedido.</td></tr>
+    <tr><td>Alertas de vencimento: dias antes</td><td>30</td><td>Quando CNH, vistoria e licenciamento entram nos alertas.</td></tr>
+  </table>
+</section>
+
+<!-- ======================== 7. ADMIN ================================== -->
+<section class="cap">
+  <div class="cap-titulo rosa"><div class="num">7</div><div><h2>Administração</h2><p>Logins, senhas e auditoria completa</p></div></div>
+  <p>Entrada em <code>/admin</code>, com <b>e-mail e senha</b>.</p>
+
+  <div class="tela"><div class="tela-cab"><b>Usuários e senhas</b><span class="end">/painel/usuarios</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-serve">Para que serve</span>Criar e gerenciar o acesso da <b>SEMEDUC</b>, da <b>SEMTRANSP</b>, dos <b>motoristas</b> e de outros administradores.</div>
+    <div class="bloco"><span class="rot r-usar">Como usar</span>
+      <ol class="passos">
+        <li>Preencha nome, CPF, perfil, e-mail (opcional, permite recuperar a senha sozinho) e telefone. Clique em <b>Criar usuário</b>.</li>
+        <li>O sistema mostra a <b>senha provisória</b>: anote e entregue à pessoa. Ela troca no primeiro acesso.</li>
+        <li>Use <b>Nova senha</b> quando alguém esquecer, e <b>Bloquear/Liberar</b> para tirar ou devolver o acesso. Os filtros no topo separam por perfil.</li>
+      </ol></div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>Concentra o controle de quem acessa o sistema num só lugar. Os alunos não são criados aqui: entram pelos Pedidos de passe ou pela SEMEDUC.</div>
+  </div></div>
+
+  <div class="tela"><div class="tela-cab"><b>Auditoria completa</b><span class="end">/painel/auditoria</span></div><div class="tela-corpo">
+    <div class="bloco"><span class="rot r-usar">Como usar</span>Filtre por cadastro, ação (criou, alterou, apagou), período e pessoa. Cada linha mostra quando, quem, o quê e as mudanças (valor antigo → novo). Ações das rotinas automáticas aparecem como "Sistema (automático)".</div>
+    <div class="bloco"><span class="rot r-porque">Por que existe</span>A Administração vê <b>tudo</b>; cada secretaria vê só o que é dela.</div>
+  </div></div>
+</section>
+
+<!-- =================== 8. ROTINAS, AVISOS, SEGURANÇA ================== -->
+<section class="cap">
+  <div class="cap-titulo cinza"><div class="num">8</div><div><h2>Rotinas, avisos e segurança</h2><p>O que acontece sozinho e como os dados são protegidos</p></div></div>
+
+  <h3>8.1 O que o sistema faz sozinho</h3>
+  <table>
+    <tr><th style="width:30%">Rotina</th><th style="width:20%">Quando</th><th>O que faz</th></tr>
+    <tr><td>Criar viagens</td><td>Todo dia, 00:05</td><td>Cria as viagens de 2 dias à frente com a escala semanal (não cria em feriado/recesso geral).</td></tr>
+    <tr><td>Fechar prazos</td><td>A cada 5 min</td><td>Fecha as viagens com prazo vencido, distribui os alunos nos ônibus e avisa "Seu ônibus".</td></tr>
+    <tr><td>Lembrete de reserva</td><td>A cada 5 min</td><td>1 hora antes do prazo, avisa quem tem a viagem liberada e não reservou (no máximo um de ida e um de volta por dia).</td></tr>
+    <tr><td>Volta 20:30</td><td>A cada 5 min</td><td>Às 20:00, cancela a 20:30 que não atingiu o mínimo e avisa.</td></tr>
+    <tr><td>Encerrar viagens esquecidas</td><td>A cada 30 min</td><td>Encerra viagens 4 h após a saída e lança as faltas.</td></tr>
+    <tr><td>Matrículas</td><td>Todo dia, 08:00</td><td>Avisa quem vence em 15 dias e quem venceu.</td></tr>
+    <tr><td>Envio de notificações</td><td>Na hora (e repetição a cada minuto)</td><td>Cada aviso gravado vira notificação nos celulares inscritos.</td></tr>
+  </table>
+
+  <h3>8.2 Notificações enviadas</h3>
+  <table>
+    <tr><th style="width:45%">Aviso</th><th>Para quem</th></tr>
+    <tr><td>"Seu ônibus: prefixo X" e troca de ônibus</td><td>Aluno reservado</td></tr>
+    <tr><td>Ônibus no ponto (1º embarque de cada ponto)</td><td>Quem está no ônibus e ainda não embarcou, do ponto em diante</td></tr>
+    <tr><td>Viagem cancelada, com ocorrência ou dia sem transporte</td><td>Alunos reservados (e motoristas, no cancelamento)</td></tr>
+    <tr><td>Volta 20:30 liberada, confirmada ou cancelada</td><td>Alunos da volta 22:00 / que reservaram a 20:30</td></tr>
+    <tr><td>Lembrete de reserva</td><td>Aluno com a viagem liberada e sem reserva (pode desligar)</td></tr>
+    <tr><td>Justificativa e troca aprovada/recusada</td><td>Aluno</td></tr>
+    <tr><td>Matrícula vencendo / vencida</td><td>Aluno</td></tr>
+    <tr><td>Escalado/retirado, lista fechada, viagem cancelada</td><td>Motorista</td></tr>
+    <tr><td>Pedido de passe aprovado/recusado</td><td>Aluno, por <b>e-mail</b> (ainda não tem o app)</td></tr>
+  </table>
+  <div class="atencao"><b>iPhone:</b> as notificações só chegam com o app <b>instalado na tela de início</b> (iOS 16.4 ou mais novo). Tudo também fica guardado em <b>Avisos</b>, dentro do app.</div>
+
+  <h3>8.3 Segurança e LGPD</h3>
+  <ul>
+    <li>Cada pessoa vê <b>só o que é dela</b>: o aluno vê os próprios dados; o motorista, só as viagens em que está escalado; cada secretaria, a sua área. Isso é garantido pelo banco de dados, não só pelas telas.</li>
+    <li><b>Senhas</b> nunca são guardadas em texto; a primeira é provisória e a troca é obrigatória.</li>
+    <li><b>Fotos e documentos</b> ficam em local privado e só abrem por links temporários. Atestados só a SEMEDUC vê.</li>
+    <li><b>Localização do aluno</b>: usada só na leitura do QR (guarda apenas a distância). <b>Localização do motorista</b>: só durante a viagem em andamento, e só a última posição.</li>
+    <li>No primeiro acesso, o aluno aceita o <b>termo de uso e privacidade</b> (com data e versão registradas).</li>
+    <li><b>Auditoria</b>: toda criação, alteração ou exclusão feita pelas secretarias e motoristas fica registrada.</li>
+  </ul>
+
+  <h3>8.4 Dúvidas frequentes</h3>
+  <div class="duas">
+    <div class="card"><b>O aluno não vê a viagem.</b><br>Confira na ficha: rotas liberadas, situação "ativo", validade da matrícula, curso/instituição (dia sem aula, semestre) e se é feriado.</div>
+    <div class="card"><b>O aluno não recebeu o ônibus.</b><br>Veja no Painel do dia se a viagem tem ônibus escalado. Sem ônibus, ninguém é alocado: adicione um e use "Realocar alunos".</div>
+    <div class="card"><b>O QR foi recusado.</b><br>Verifique: reserva naquela viagem, horário (1 h antes até 30 min depois), ônibus certo e localização permitida. Em último caso, presença manual pelo motorista.</div>
+    <div class="card"><b>O motorista não vê a viagem.</b><br>Ele precisa estar escalado (escala semanal ou Painel do dia) e logado com o próprio CPF.</div>
+    <div class="card"><b>Esqueceram a senha.</b><br>Com e-mail: "Esqueci minha senha". Sem e-mail: aluno pela SEMEDUC; equipe e motoristas pela Administração (Nova senha).</div>
+    <div class="card"><b>Não chegam notificações.</b><br>Tela Notificações → Ativar → Enviar teste. No iPhone, só com o app instalado. Confira o modo Foco/Não perturbe.</div>
+  </div>
+</section>
+
+</body>
+</html>
