@@ -73,6 +73,12 @@ function destino(n: Pendente): { url: string; tag: string } {
     case "onibus_atribuido":
     case "onibus_alterado":
       return { url: "/app", tag: `onibus-${ref.viagem_dia_id ?? n.id}` };
+    case "justificativa_aprovada":
+    case "justificativa_recusada":
+      return { url: "/app/historico", tag: `${n.evento}-${n.id}` };
+    case "excecao_aprovada":
+    case "excecao_recusada":
+      return { url: "/app/troca-horario", tag: `${n.evento}-${n.id}` };
     case "matricula_vencendo":
     case "matricula_vencida":
       return { url: "/app/avisos", tag: "matricula" };

@@ -3,6 +3,7 @@ import {
   Bus,
   CalendarDays,
   CalendarRange,
+  FileCheck2,
   GraduationCap,
   LayoutDashboard,
   MapPin,
@@ -12,6 +13,7 @@ import {
   UserCog,
   UserRoundPlus,
   UsersRound,
+  UserX,
   type LucideIcon,
 } from "lucide-react";
 import type { Perfil } from "@/lib/rotulos";
@@ -32,6 +34,7 @@ export const MENU: GrupoMenu[] = [
       { href: "/painel/pontos", rotulo: "Pontos", icone: MapPin },
       { href: "/painel/viagens", rotulo: "Viagens modelo", icone: Route },
       { href: "/painel/escala", rotulo: "Escala semanal", icone: CalendarRange },
+      { href: "/painel/faltas", rotulo: "Faltas", icone: UserX },
       { href: "/painel/parametros", rotulo: "Parâmetros", icone: SlidersHorizontal },
     ],
   },
@@ -41,6 +44,8 @@ export const MENU: GrupoMenu[] = [
     itens: [
       { href: "/painel/alunos", rotulo: "Alunos", icone: GraduationCap },
       { href: "/painel/pedidos-passe", rotulo: "Pedidos de passe", icone: UserRoundPlus },
+      { href: "/painel/solicitacoes", rotulo: "Justificativas e trocas", icone: FileCheck2 },
+      { href: "/painel/faltas", rotulo: "Faltas", icone: UserX },
       { href: "/painel/instituicoes", rotulo: "Instituições", icone: School },
       { href: "/painel/calendario", rotulo: "Feriados e recessos", icone: CalendarDays },
     ],
@@ -71,6 +76,8 @@ const ROTULOS: Record<string, string> = {
   calendario: "Feriados e recessos",
   usuarios: "Usuários e senhas",
   parametros: "Parâmetros",
+  faltas: "Faltas",
+  solicitacoes: "Justificativas e trocas",
 };
 
 /** Monta a trilha a partir do caminho: /painel/alunos/<id> → Início › Alunos › Detalhes. */

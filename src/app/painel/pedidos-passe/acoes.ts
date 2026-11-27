@@ -6,8 +6,15 @@ import { criarClienteServidor } from "@/lib/supabase/server";
 import { criarClienteAdmin } from "@/lib/supabase/admin";
 import { campo, campoObrigatorio, ErroValidacao, executar, type Estado } from "@/lib/acoes";
 import { criarUsuario } from "@/lib/usuarios";
-import { DIAS_VALIDADE_LINK, linkCompletar, novoCodigo } from "@/lib/codigo-link";
-import { emailCompletarPedido, emailConfigurado, enviarEmails, loteDeEnvio } from "@/lib/email";
+import { DIAS_VALIDADE_LINK, linkCompletar, novoCodigo, urlDoSite } from "@/lib/codigo-link";
+import { emailCadastroAprovado, emailCadastroRecusado, emailCompletarPedido, emailConfigurado, enviarEmails, loteDeEnvio, type Email } from "@/lib/email";
+
+/** Avisa o aluno por e-mail (quem pediu ainda não tem o app). Falha no envio não desfaz a análise. */
+async function avisarPorEmail(email: Email | null): Promise<string> {
+  if (!email || !emailConfigurado()) return "";
+  const [r] = await enviarEmails([email]).catch(() => [{ ok: false as const, erro: "" }]);
+  return r?.ok ? ` O aluno foi avisado por e-mail (${email.para}).` : " Não foi possível enviar o e-mail de aviso; avise pelo WhatsApp.";
+}
 
 /** Copia um arquivo do pedido para a pasta do aluno (bucket de destino pode ser outro). */
 async function copiar(origem: string, bucket: "documentos" | "fotos", destino: string) {
@@ -79,8 +86,9 @@ export async function aprovarPreCadastro(_: Estado, fd: FormData): Promise<Estad
 
     revalidatePath("/painel/pedidos-passe");
     revalidatePath("/painel/alunos");
+    const aviso = await avisarPorEmail(email ? emailCadastroAprovado(p.nome, email, await urlDoSite()) : null);
     return {
-      ok: `Pedido aprovado. O aluno entra pela página /aluno com o CPF e, no primeiro acesso, a senha também é o CPF (só os números); ele cria uma senha nova ao entrar. Avise pelo WhatsApp ${p.telefone} e marque as rotas dele na tela do aluno.`,
+      ok: `Pedido aprovado. O aluno entra pela página /aluno com o CPF e, no primeiro acesso, a senha também é o CPF (só os números); ele cria uma senha nova ao entrar.${aviso || ` Avise pelo WhatsApp ${p.telefone}.`} Marque as rotas dele na tela do aluno.`,
       dados: { aluno_id: novo.id },
     };
   });
@@ -93,7 +101,7 @@ export async function recusarPreCadastro(_: Estado, fd: FormData): Promise<Estad
     const id = campoObrigatorio(fd, "id", "id");
     const motivo = campoObrigatorio(fd, "motivo", "Motivo");
     const supabase = await criarClienteServidor();
-    const { data: p, error } = await supabase.from("pre_cadastros").select("status, cpf_path, comprovante_path, residencia_path, foto_path").eq("id", id).single();
+    const { data: p, error } = await supabase.from("pre_cadastros").select("status, nome, email, cpf_path, comprovante_path, residencia_path, foto_path").eq("id", id).single();
     if (error) throw error;
     if (p.status !== "pendente") throw new ErroValidacao("Este cadastro já foi analisado.");
     const { error: e1 } = await supabase
@@ -105,7 +113,8 @@ export async function recusarPreCadastro(_: Estado, fd: FormData): Promise<Estad
       .storage.from("documentos")
       .remove([p.cpf_path, p.comprovante_path, p.residencia_path, p.foto_path].filter((x): x is string => !!x));
     revalidatePath("/painel/pedidos-passe");
-    return { ok: "Cadastro recusado." };
+    const aviso = await avisarPorEmail(p.email ? emailCadastroRecusado(p.nome, p.email, motivo, await urlDoSite()) : null);
+    return { ok: `Cadastro recusado.${aviso}` };
   });
 }
 

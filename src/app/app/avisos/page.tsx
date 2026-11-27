@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowDownLeft, ArrowLeft, Ban, Bell, BellRing, Bus, CalendarClock, CheckCircle2, GraduationCap, MapPin, Shuffle } from "lucide-react";
+import { ArrowDownLeft, ArrowLeft, Ban, Bell, BellRing, Bus, CalendarClock, CheckCircle2, GraduationCap, MapPin, Repeat2, ShieldCheck, Shuffle, XCircle } from "lucide-react";
 import { exigirPerfil } from "@/lib/auth";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { Vazio, cx } from "@/components/ui";
@@ -20,6 +20,10 @@ const ICONE: Record<string, { icone: typeof Bell; cor: string }> = {
   matricula_vencendo: { icone: GraduationCap, cor: "bg-amber-50 text-amber-600" },
   matricula_vencida: { icone: GraduationCap, cor: "bg-red-50 text-red-600" },
   teste: { icone: BellRing, cor: "bg-azul-50 text-azul-600" },
+  justificativa_aprovada: { icone: ShieldCheck, cor: "bg-emerald-50 text-emerald-600" },
+  justificativa_recusada: { icone: XCircle, cor: "bg-red-50 text-red-600" },
+  excecao_aprovada: { icone: Repeat2, cor: "bg-emerald-50 text-emerald-600" },
+  excecao_recusada: { icone: XCircle, cor: "bg-red-50 text-red-600" },
 };
 
 /** Avisos do aluno. Ao abrir, todos ficam marcados como lidos. */

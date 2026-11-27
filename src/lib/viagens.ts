@@ -40,13 +40,14 @@ export type PontoOpcao = {
   linha: "campos" | "itaperuna" | null;
 };
 
-export type ResultadoFrequencia = "presente" | "falta" | "nao_retornou" | "anulada";
+export type ResultadoFrequencia = "presente" | "falta" | "nao_retornou" | "anulada" | "justificada";
 
-export const RESULTADOS: Record<ResultadoFrequencia, { rotulo: string; cor: "verde" | "vermelho" | "amarelo" | "cinza" }> = {
+export const RESULTADOS: Record<ResultadoFrequencia, { rotulo: string; cor: "verde" | "vermelho" | "amarelo" | "cinza" | "azul" }> = {
   presente: { rotulo: "Presente", cor: "verde" },
   falta: { rotulo: "Falta", cor: "vermelho" },
   nao_retornou: { rotulo: "Não retornou", cor: "amarelo" },
   anulada: { rotulo: "Anulada (ocorrência)", cor: "cinza" },
+  justificada: { rotulo: "Falta justificada", cor: "azul" },
 };
 
 export const STATUS_VIAGEM: Record<StatusViagem, { rotulo: string; cor: "azul" | "amarelo" | "verde" | "cinza" | "vermelho" }> = {

@@ -125,3 +125,55 @@ export function emailCompletarPedido(nome: string, para: string, link: string, d
 </td></tr></table></td></tr></table></body></html>`;
   return { para, assunto: "Complete seu pedido de passe do transporte universitário", html, texto };
 }
+
+/** Moldura comum dos e-mails (cartão branco, título e rodapé da secretaria). */
+function moldura(titulo: string, corpoHtml: string): string {
+  return `<!doctype html><html><body style="margin:0;background:#f4f6fb;font-family:Arial,Helvetica,sans-serif;color:#0f172a">
+<table width="100%" cellpadding="0" cellspacing="0" style="padding:24px 12px"><tr><td align="center">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;padding:28px">
+<tr><td>
+<p style="margin:0 0 4px;font-size:12px;letter-spacing:2px;color:#2563eb;font-weight:bold">PREFEITURA DE ITALVA</p>
+<h1 style="margin:0 0 16px;font-size:22px">${titulo}</h1>
+${corpoHtml}
+<p style="margin:24px 0 0;font-size:12px;color:#64748b">Secretaria Municipal de Educação de Italva · Transporte Universitário</p>
+</td></tr></table></td></tr></table></body></html>`;
+}
+
+/** Pedido de passe aprovado: como entrar no app pela primeira vez. */
+export function emailCadastroAprovado(nome: string, para: string, site: string): Email {
+  const primeiro = nome.split(" ")[0];
+  const link = `${site}/primeiro-acesso`;
+  const texto =
+    `Olá, ${primeiro}!\n\nSeu pedido de passe do transporte universitário foi APROVADO.\n\n` +
+    `Para entrar no app pela primeira vez, abra ${link} e informe o seu CPF e os 4 últimos números do seu telefone ` +
+    `(ou a data de nascimento). A primeira senha é o próprio CPF (só os números); em seguida você cria uma senha nova.\n\n` +
+    `Depois, instale o app no celular (${site}/instalar) e ative as notificações para saber o seu ônibus.\n\n` +
+    `Secretaria Municipal de Educação de Italva`;
+  const html = moldura(
+    `Passe aprovado, ${escapar(primeiro)}! 🎉`,
+    `<p style="margin:0 0 12px;font-size:15px;line-height:1.5">Seu pedido de passe do transporte universitário foi <strong>aprovado</strong>.</p>
+<p style="margin:0 0 12px;font-size:15px;line-height:1.5">No primeiro acesso, informe o seu CPF e os 4 últimos números do seu telefone (ou a data de nascimento). A primeira senha é o próprio CPF, só os números. Depois você cria uma senha nova.</p>
+<p style="margin:24px 0;text-align:center"><a href="${escapar(link)}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:bold;padding:14px 28px;border-radius:12px;font-size:16px">Fazer o primeiro acesso</a></p>
+<p style="margin:0 0 8px;font-size:14px;line-height:1.5">Dica: instale o app no celular (<a href="${escapar(site)}/instalar">${escapar(site)}/instalar</a>) e ative as notificações para saber qual é o seu ônibus.</p>`,
+  );
+  return { para, assunto: "Seu passe do transporte universitário foi aprovado", html, texto };
+}
+
+/** Pedido de passe recusado, com o motivo e como pedir de novo. */
+export function emailCadastroRecusado(nome: string, para: string, motivo: string, site: string): Email {
+  const primeiro = nome.split(" ")[0];
+  const link = `${site}/cadastro`;
+  const texto =
+    `Olá, ${primeiro}!\n\nSeu pedido de passe do transporte universitário não foi aprovado.\n\nMotivo: ${motivo}\n\n` +
+    `Você pode corrigir e fazer um novo pedido em ${link}. Em caso de dúvida, procure a Secretaria de Educação.\n\n` +
+    `Secretaria Municipal de Educação de Italva`;
+  const html = moldura(
+    `Olá, ${escapar(primeiro)}`,
+    `<p style="margin:0 0 12px;font-size:15px;line-height:1.5">Seu pedido de passe do transporte universitário <strong>não foi aprovado</strong>.</p>
+<p style="margin:0 0 12px;font-size:15px;line-height:1.5;background:#fef2f2;border-radius:12px;padding:12px 14px;color:#991b1b"><strong>Motivo:</strong> ${escapar(motivo)}</p>
+<p style="margin:0 0 12px;font-size:15px;line-height:1.5">Você pode corrigir e fazer um novo pedido:</p>
+<p style="margin:24px 0;text-align:center"><a href="${escapar(link)}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:bold;padding:14px 28px;border-radius:12px;font-size:16px">Fazer novo pedido</a></p>
+<p style="margin:0;font-size:13px;color:#64748b">Em caso de dúvida, procure a Secretaria de Educação.</p>`,
+  );
+  return { para, assunto: "Seu pedido de passe precisa de correção", html, texto };
+}
