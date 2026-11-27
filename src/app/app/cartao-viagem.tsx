@@ -193,6 +193,10 @@ export function CartaoViagem({ v, pontos, voltas = [] }: { v: MinhaViagem; ponto
                 <p className="font-semibold text-slate-900">
                   {v.onibus_prefixo ? `Seu ônibus: ${v.onibus_prefixo}` : "Definindo seu ônibus…"}
                 </p>
+                {v.onibus_prefixo && v.onibus_placa && <p className="text-sm text-slate-600">Placa {v.onibus_placa}</p>}
+                {v.onibus_prefixo && v.motorista_nome && (
+                  <p className="text-sm text-slate-600">Motorista {primeiroENome(v.motorista_nome)}</p>
+                )}
                 <p className="truncate text-sm text-slate-500">
                   {v.ponto_nome ? `Embarque: ${v.ponto_nome}` : "Ponto de embarque não escolhido"}
                   {v.ponto_desembarque_nome ? ` · Desce: ${v.ponto_desembarque_nome}` : ""}
@@ -261,6 +265,13 @@ function Faixa({
       </div>
     </div>
   );
+}
+
+/** "JOÃO CARLOS DA SILVA" → "João Silva" (mais fácil de ler no cartão). */
+function primeiroENome(nome: string) {
+  const partes = nome.trim().split(/\s+/).filter((p) => !/^(da|de|do|das|dos|e)$/i.test(p));
+  const cap = (p: string) => p.charAt(0).toLocaleUpperCase("pt-BR") + p.slice(1).toLocaleLowerCase("pt-BR");
+  return partes.length > 1 ? `${cap(partes[0])} ${cap(partes[partes.length - 1])}` : cap(partes[0] ?? nome);
 }
 
 const NOME_CIDADE = { italva: "Italva", campos: "Campos", itaperuna: "Itaperuna" } as const;

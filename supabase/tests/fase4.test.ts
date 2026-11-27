@@ -148,6 +148,16 @@ describe("reserva e confirmação (cenário 11)", () => {
     expect(sem.rows.length).toBe(0);
   });
 
+  it("quem ficou na 22:00 vê no app o ônibus e o motorista novos (I2, motorista do I2)", async () => {
+    const nomeM2 = (await db.query<{ nome: string }>("select nome from usuarios where id = $1", [M2])).rows[0].nome;
+    const minhas = await como<{ nome: string; onibus_prefixo: string; onibus_placa: string; motorista_nome: string }>(
+      db,
+      A[2],
+      "select nome, onibus_prefixo, onibus_placa, motorista_nome from minhas_viagens('2026-10-26')",
+    );
+    expect(minhas.find((m) => m.nome === "Volta noite")).toMatchObject({ onibus_prefixo: "I2", onibus_placa: "III2I22", motorista_nome: nomeM2 });
+  });
+
   it("o botão some: depois de confirmada, ninguém mais reserva", async () => {
     expect(await falhaComo(db, A[2], "select reservar_volta_2030()")).toMatch(/já fechou as vagas/);
   });

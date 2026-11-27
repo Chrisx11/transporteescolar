@@ -25,6 +25,9 @@ export type MinhaViagem = {
   ponto_embarque_id: string | null;
   ponto_desembarque_id: string | null;
   ponto_desembarque_nome: string | null;
+  /** Placa e motorista do ônibus do aluno (depois que o prazo fecha). */
+  onibus_placa?: string | null;
+  motorista_nome?: string | null;
 };
 
 /** Ponto de embarque/desembarque (para o aluno escolher ao reservar). */

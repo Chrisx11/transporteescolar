@@ -25,6 +25,11 @@ export default function PreviaHoje() {
   ];
   return (
     <main className="mx-auto flex max-w-md flex-col gap-4 bg-slate-100 p-4">
+      <CartaoViagem
+        v={{ ...v("r1", "volta", "Volta noite", "22:00", "15:00"), cidade: "itaperuna", reserva_id: "x", status_viagem: "prazo_fechado", pode_cancelar: false,
+          onibus_prefixo: "09", onibus_placa: "LMN2B34", motorista_nome: "JOSÉ CARLOS DA SILVA", ponto_nome: "UNIG", ponto_desembarque_nome: "Praça Central" } as MinhaViagem}
+        pontos={pontos}
+      />
       {idas.map((i) => (
         <CartaoViagem key={i.viagem_dia_id} v={i} pontos={pontos} voltas={voltas.filter((x) => x.saida_em > i.saida_em)} />
       ))}
