@@ -13,6 +13,7 @@ import {
   Download,
   LogOut,
   Menu,
+  BellRing,
   ScanLine,
   UserRound,
   X,
@@ -20,6 +21,7 @@ import {
 import { toast } from "sonner";
 import { Avatar, cx } from "@/components/ui";
 import { useInstalacao } from "@/lib/instalacao";
+import { esquecerInscricaoAoSair } from "@/lib/notificacoes-push";
 import { PainelInstalar, type QualApp } from "./instalar-app";
 
 type Item = { href: string; rotulo: string; icone: typeof Bell; exato?: boolean };
@@ -30,8 +32,12 @@ const ITENS: Record<QualApp, Item[]> = {
     { href: "/app/ler-qr", rotulo: "Ler QR code do ônibus", icone: ScanLine },
     { href: "/app/avisos", rotulo: "Avisos", icone: Bell },
     { href: "/app/meus-dados", rotulo: "Meus dados", icone: UserRound },
+    { href: "/app/notificacoes", rotulo: "Notificações", icone: BellRing },
   ],
-  motorista: [{ href: "/app/motorista", rotulo: "Minhas viagens", icone: Bus }],
+  motorista: [
+    { href: "/app/motorista", rotulo: "Minhas viagens", icone: Bus },
+    { href: "/app/notificacoes", rotulo: "Notificações", icone: BellRing },
+  ],
 };
 
 /**
@@ -216,7 +222,17 @@ export function MenuApp({ app, nome, perfil, naoLidos }: { app: QualApp; nome: s
 
           {tela === "menu" && (
             <div className="border-t border-slate-100 p-4">
-              <form action="/auth/sair" method="post">
+              <form
+                action="/auth/sair"
+                method="post"
+                onSubmit={async (e) => {
+                  // Antes de sair, o celular para de receber os avisos desta conta.
+                  e.preventDefault();
+                  const form = e.currentTarget;
+                  await esquecerInscricaoAoSair();
+                  form.submit();
+                }}
+              >
                 <button className="flex h-12 w-full items-center gap-3 rounded-xl px-3 text-[15px] font-medium text-red-600 hover:bg-red-50">
                   <LogOut className="size-5" /> Sair
                 </button>

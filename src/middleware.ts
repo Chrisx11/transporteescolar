@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 // "/dev": prévias de tela só do servidor local (as páginas dão 404 em produção).
 const ROTAS_PUBLICAS = [
   "/login", "/aluno", "/motorista", "/semeduc", "/semtransp", "/admin",
-  "/cadastro", "/completar", "/continuar", "/primeiro-acesso", "/instalar", "/esqueci-senha", "/auth", "/offline", "/api/auth/login", "/dev",
+  "/cadastro", "/completar", "/continuar", "/primeiro-acesso", "/instalar", "/esqueci-senha", "/auth", "/offline", "/api/auth/login", "/api/push/enviar", "/dev",
 ];
 
 /** Login de cada área do site (quem não está logado volta para o login certo). */

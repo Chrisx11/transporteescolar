@@ -8,6 +8,7 @@ import { CIDADES_CURTO, SENTIDOS, type Cidade, type Sentido } from "@/lib/rotulo
 import { STATUS_VIAGEM, type StatusViagem } from "@/lib/viagens";
 import { AtualizarSozinho } from "./atualizar-sozinho";
 import { ConviteInstalar } from "@/components/menu-app";
+import { CartaoNotificacoes, JanelaNotificacoes } from "@/components/notificacoes";
 import { Volta2030, type InfoVolta2030 } from "./volta-2030";
 
 type Linha = {
@@ -56,6 +57,8 @@ export default async function InicioMotorista() {
   return (
     <div className="flex flex-col gap-4">
       <AtualizarSozinho />
+      <JanelaNotificacoes app="motorista" />
+      <CartaoNotificacoes app="motorista" />
       <ConviteInstalar app="motorista" />
       <div className="flex items-center gap-3 rounded-2xl bg-white p-4 shadow-elevada">
         <span className="flex size-11 items-center justify-center rounded-xl bg-amber-50 text-amber-600">

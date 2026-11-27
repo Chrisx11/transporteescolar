@@ -9,6 +9,7 @@ import type { MinhaViagem, PontoOpcao } from "@/lib/viagens";
 import { CartaoViagem } from "./cartao-viagem";
 import { SecaoVoltas } from "./secao-voltas";
 import { ConviteInstalar } from "@/components/menu-app";
+import { CartaoNotificacoes, JanelaNotificacoes } from "@/components/notificacoes";
 import { Volta2030Aluno, type MinhaVolta2030 } from "./volta-2030-aluno";
 
 /**
@@ -71,6 +72,8 @@ export default async function HojeAluno({ searchParams }: { searchParams: Promis
         </div>
       </div>
 
+      <JanelaNotificacoes app="aluno" />
+      <CartaoNotificacoes app="aluno" />
       <ConviteInstalar app="aluno" />
 
       {aluno?.situacao === "pendente" && <Aviso tipo="alerta">Seu cadastro está em análise pela Secretaria de Educação.</Aviso>}
