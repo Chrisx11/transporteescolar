@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   Circle,
   CloudOff,
+  Eye,
   Hand,
   Loader2,
   MapPin,
@@ -47,6 +48,8 @@ type Aluno = {
   tipo: "qr" | "manual" | null;
   motivo_manual: string | null;
   desembarque_nome?: string | null;
+  /** Reservado, mas o ônibus ainda não foi definido (prazo aberto): lista prévia da viagem. */
+  previa?: boolean;
 };
 
 type Dados = { trecho: Trecho; alunos: Aluno[]; salvoEm: string };
@@ -271,6 +274,7 @@ export function TelaTrecho({ vdo }: { vdo: string }) {
   const embarcados = alunos.filter((a) => a.embarcado).length;
   const encerrado = !!trecho.encerrada_em;
   const pontos = agrupar(alunos);
+  const previa = v?.status === "agendada" || alunos.some((a) => a.previa);
 
   return (
     <div className="flex flex-col gap-4 pb-24">
@@ -297,7 +301,8 @@ export function TelaTrecho({ vdo }: { vdo: string }) {
 
         <div className="mt-4 flex items-end justify-between">
           <p className="text-4xl font-black tabular-nums text-slate-900">
-            {embarcados} <span className="text-lg font-semibold text-slate-400">de {alunos.length} embarcados</span>
+            {previa ? alunos.length : embarcados}{" "}
+            <span className="text-lg font-semibold text-slate-400">{previa ? `reservado${alunos.length === 1 ? "" : "s"} até agora` : `de ${alunos.length} embarcados`}</span>
           </p>
         </div>
         <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
@@ -329,12 +334,23 @@ export function TelaTrecho({ vdo }: { vdo: string }) {
         )}
       </div>
 
+      {previa && (
+        <div className="flex items-start gap-3 rounded-2xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200">
+          <Eye className="mt-0.5 size-5 shrink-0 text-amber-600" />
+          <div>
+            <p className="font-semibold">Lista prévia · atualiza sozinha</p>
+            <p className="text-xs text-amber-800">
+              Mostra quem já reservou esta viagem até agora{v?.prazo_em ? `. A reserva fecha às ${HORA.format(new Date(v.prazo_em))}` : ""}
+              ; depois disso, a lista final mostra só os alunos do seu ônibus.
+            </p>
+          </div>
+        </div>
+      )}
+
       {alunos.length === 0 ? (
         <div className="flex flex-col items-center gap-2 rounded-2xl bg-white p-8 text-center text-sm text-slate-500 shadow-suave">
           <UserRound className="size-8 text-slate-300" />
-          {v?.status === "agendada" && v.prazo_em
-            ? `A lista sai depois do prazo de reserva (${HORA.format(new Date(v.prazo_em))}).`
-            : "Nenhum aluno neste ônibus."}
+          {previa ? "Ninguém reservou ainda. Os alunos aparecem aqui assim que reservarem." : "Nenhum aluno neste ônibus."}
         </div>
       ) : (
         pontos.map(([ponto, lista]) => (

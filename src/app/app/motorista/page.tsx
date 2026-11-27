@@ -6,6 +6,7 @@ import { Selo, Vazio, cx } from "@/components/ui";
 import { DIAS_SEMANA, dataBR, diaSemanaIso, hojeSP } from "@/lib/tempo";
 import { CIDADES_CURTO, SENTIDOS, type Cidade, type Sentido } from "@/lib/rotulos";
 import { STATUS_VIAGEM, type StatusViagem } from "@/lib/viagens";
+import { AtualizarSozinho } from "./atualizar-sozinho";
 
 type Linha = {
   id: string;
@@ -38,14 +39,19 @@ export default async function InicioMotorista() {
     .filter((l) => l.viagem)
     .sort((a, b) => a.viagem!.saida_em.localeCompare(b.viagem!.saida_em));
 
-  const ids = linhas.map((l) => l.id);
-  const { data: reservas } = ids.length
-    ? await supabase.from("reservas").select("viagem_dia_onibus_id").in("viagem_dia_onibus_id", ids).eq("status", "ativa")
-    : { data: [] };
-  const alunos = (id: string) => (reservas ?? []).filter((r) => r.viagem_dia_onibus_id === id).length;
+  // Quantos alunos em cada trecho. Com o prazo aberto, a lista é prévia (todos os reservados da viagem).
+  const contagens = await Promise.all(
+    linhas.map(async (l) => {
+      if (l.viagem!.sentido === "deslocamento_vazio" || l.viagem!.status === "cancelada") return [l.id, 0] as const;
+      const { data: lista } = await supabase.rpc("lista_embarque", { p_vdo: l.id });
+      return [l.id, (lista ?? []).length] as const;
+    }),
+  );
+  const alunos = (id: string) => contagens.find(([i]) => i === id)?.[1] ?? 0;
 
   return (
     <div className="flex flex-col gap-4">
+      <AtualizarSozinho />
       <div className="flex items-center gap-3 rounded-2xl bg-white p-4 shadow-elevada">
         <span className="flex size-11 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
           <CalendarCheck className="size-5" />
@@ -91,8 +97,8 @@ export default async function InicioMotorista() {
                   {v.sentido !== "deslocamento_vazio" && (
                     <span className="flex items-center gap-1.5 text-slate-600">
                       <Users className="size-4 text-slate-400" />
-                      {v.status === "agendada" && v.prazo_em
-                        ? `Lista fecha às ${HORA.format(new Date(v.prazo_em))}`
+                      {v.status === "agendada"
+                        ? `${n} reservado${n === 1 ? "" : "s"} até agora${v.prazo_em ? ` · fecha ${HORA.format(new Date(v.prazo_em))}` : ""}`
                         : `${n} aluno${n === 1 ? "" : "s"} no seu ônibus`}
                     </span>
                   )}
@@ -107,7 +113,7 @@ export default async function InicioMotorista() {
                         : "bg-azul-600 text-white shadow-md shadow-azul-600/30 hover:bg-azul-700",
                     )}
                   >
-                    {v.status === "encerrada" ? "Ver lista" : v.status === "em_andamento" ? "Abrir lista" : "Abrir viagem"}
+                    {v.status === "encerrada" ? "Ver lista" : v.status === "em_andamento" ? "Abrir lista" : v.status === "agendada" ? "Ver lista prévia" : "Abrir viagem"}
                     <ChevronRight className="size-4" />
                   </Link>
                 )}

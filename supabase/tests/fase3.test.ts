@@ -139,8 +139,16 @@ beforeAll(async () => {
 }, 180_000);
 
 describe("motorista inicia a ida", () => {
+  it("antes do prazo fechar, vê a lista prévia com todos os reservados da viagem", async () => {
+    const tNoite = await trecho(ids.vNoite, ids.on03);
+    const lista = await como<{ aluno_id: string; previa: boolean }>(db, M2, "select aluno_id, previa from lista_embarque($1)", [tNoite]);
+    expect(lista).toEqual([{ aluno_id: D, previa: true }]);
+    expect(await falhaComo(db, M1, "select * from lista_embarque($1)", [tNoite])).toMatch(/escala/);
+  });
+
   it("alocou A e B no 01 e E no 02", async () => {
-    const lista = await como<{ aluno_id: string }>(db, M1, "select aluno_id from lista_embarque($1)", [ids.t01]);
+    const lista = await como<{ aluno_id: string }>(db, M1, "select aluno_id, previa from lista_embarque($1)", [ids.t01]);
+    expect(lista.every((l) => !(l as { previa?: boolean }).previa)).toBe(true);
     expect(lista.map((l) => l.aluno_id).sort()).toEqual([A, B].sort());
   });
 
