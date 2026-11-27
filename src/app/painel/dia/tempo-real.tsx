@@ -35,6 +35,9 @@ export function TempoReal() {
         .on("postgres_changes", { event: "*", schema: "public", table: "viagens_dia" }, recarregar)
         .on("postgres_changes", { event: "*", schema: "public", table: "viagem_dia_onibus" }, recarregar)
         .on("postgres_changes", { event: "*", schema: "public", table: "embarques" }, recarregar)
+        // Volta 20:30 de Itaperuna: liberação e reservas antes de confirmar.
+        .on("postgres_changes", { event: "*", schema: "public", table: "liberacoes_2030" }, recarregar)
+        .on("postgres_changes", { event: "*", schema: "public", table: "reservas_2030" }, recarregar)
         .subscribe((status) => setConectado(status === "SUBSCRIBED"));
     })();
 
