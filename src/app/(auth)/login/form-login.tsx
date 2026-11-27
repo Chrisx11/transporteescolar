@@ -131,7 +131,7 @@ export function FormLogin({ area }: { area: Perfil }) {
       </Link>
       {(area === "aluno" || area === "motorista") && (
         <Link
-          href={area === "motorista" ? "/instalar?app=motorista" : "/instalar"}
+          href={area === "motorista" ? "/instalar/motorista" : "/instalar"}
           className="flex items-center justify-center gap-2 rounded-xl bg-azul-50 py-2.5 text-sm font-semibold text-azul-800 ring-1 ring-azul-100 hover:bg-azul-100"
         >
           <Download className="size-4" /> Baixar o app no celular
